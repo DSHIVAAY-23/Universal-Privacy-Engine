@@ -1,0 +1,24 @@
+[package]
+name = "rwa-compliance-guest"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# SP1 zkVM runtime - provides syscalls and precompiles
+sp1-zkvm = "3.0.0"
+
+# Borsh for deterministic serialization (critical for ZK)
+borsh = { version = "1.5", default-features = false }
+
+# Universal Privacy Engine core types
+universal-privacy-engine-core = { path = "../../core", default-features = false }
+
+[profile.release]
+# Optimize for size in zkVM environment
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+
+# Strip symbols to reduce ELF size
+strip = true

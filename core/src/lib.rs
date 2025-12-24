@@ -15,6 +15,9 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+// RWA (Real-World Asset) compliance types
+pub mod rwa;
+
 /// Represents the target blockchain platform for verifier deployment.
 ///
 /// This enum allows the `PrivacyEngine` to generate chain-specific verifier bytecode,

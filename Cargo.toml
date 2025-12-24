@@ -3,6 +3,7 @@ members = [
     "core",
     "adapters/sp1",
     "cli",
+    "guest/rwa_compliance",
 ]
 
 # Enforce consistent Rust edition across all workspace members
@@ -23,7 +24,8 @@ thiserror = "1.0"
 anyhow = "1.0"
 tokio = { version = "1.35", features = ["full"] }
 clap = { version = "4.4", features = ["derive"] }
+borsh = { version = "1.5", features = ["derive"] }
 
 # SP1 SDK - The primary ZK proving backend
 # Note: Version may need adjustment based on latest SP1 releases
-sp1-sdk = "1.0"
+sp1-sdk = "3.0.0"

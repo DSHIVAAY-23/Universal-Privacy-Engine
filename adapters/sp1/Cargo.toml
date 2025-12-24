@@ -1,0 +1,26 @@
+[package]
+name = "universal-privacy-engine-sp1"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# Core abstraction layer - defines the PrivacyEngine trait
+universal-privacy-engine-core = { path = "../../core" }
+
+# SP1 SDK - The Succinct Prover backend
+sp1-sdk.workspace = true
+
+# Async runtime for SP1's async APIs
+tokio.workspace = true
+
+# Serialization inherited from core
+serde.workspace = true
+bincode.workspace = true
+
+# Error handling
+thiserror.workspace = true
+
+# JSON serialization for metadata
+serde_json = "1.0"

@@ -1,0 +1,16 @@
+[package]
+name = "universal-privacy-engine-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# Serialization framework for ProofReceipt and other types
+serde.workspace = true
+
+# Efficient binary encoding for proof data
+bincode.workspace = true
+
+# Library-grade error handling with custom error types
+thiserror.workspace = true

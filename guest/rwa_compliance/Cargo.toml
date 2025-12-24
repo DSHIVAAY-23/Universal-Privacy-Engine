@@ -10,6 +10,9 @@ sp1-zkvm = "3.0.0"
 # Borsh for deterministic serialization
 borsh = { version = "1.5", default-features = false, features = ["derive"] }
 
+# Ed25519 signature verification (SP1 optimized)
+ed25519-dalek = { version = "2.1", default-features = false, features = ["alloc"] }
+
 # Merkle tree verification
 rs_merkle = { version = "1.4", default-features = false }
 

@@ -1,41 +1,48 @@
-# Universal Privacy Engine - Stellar Demo
+# ZK Compliance Proof - Technical Demonstration
 
-## Grant Committee Demonstration
-
-This document provides a step-by-step demonstration of the Universal Privacy Engine for the **Stellar Development Foundation** grant application.
+> **Disclaimer**: This is a research prototype demonstrating technical feasibility only. It does NOT validate real-world asset truth or provide regulatory compliance.
 
 ---
 
-## Demo Overview
+## What This Demo Shows
 
-**Scenario**: An institutional investor (hedge fund) wants to prove they have ≥$100,000 in assets to participate in a Stellar-based RWA protocol, without revealing their exact balance.
+This demonstration illustrates the **technical capability** to:
 
-**Solution**: Use the Universal Privacy Engine to generate a zero-knowledge proof that:
-1. ✅ Verifies the institution's Ed25519 signature
-2. ✅ Proves balance is in the institutional Merkle tree
-3. ✅ Confirms balance ≥ $100,000 threshold
-4. 🔒 **Keeps the exact balance private**
+1. Generate zero-knowledge proofs for compliance-style predicates
+2. Verify proofs on-chain across different execution environments
+3. Preserve privacy of sensitive data during verification
+
+**This demo does NOT prove**:
+- Asset existence or authenticity
+- Institutional trustworthiness
+- Regulatory compliance
+- Legal validity
 
 ---
 
-## Quick Start (3 Commands)
+## Quick Start (Research Demo)
 
 ```bash
 # Step 1: Build the project
 cargo build --release
 
-# Step 2: Generate institutional credentials (the "fuel")
+# Step 2: Generate test credentials
 cargo run --bin generate_inputs -- --output rwa_creds.bin
 
-# Step 3: Generate ZK proof (future - requires compiled guest ELF)
+# Step 3: Generate ZK proof (requires compiled guest ELF - future work)
 # cargo run --bin upe -- prove --input rwa_creds.bin
 ```
 
 ---
 
-## Step 1: Generate Institutional Credentials
+## Step 1: Generate Test Credentials
 
-**The Missing Link**: Before you can run the ZK proof engine, you need cryptographically valid input data. This is where the **Institutional Fuel Generator** comes in.
+**Purpose**: Create cryptographically valid test data for the ZK circuit.
+
+**Important**: This generates **simulated** institutional credentials. The data is:
+- Self-generated (not from a real institution)
+- Self-signed (not from a trusted authority)
+- For testing only (not real assets)
 
 ```bash
 cargo run --bin generate_inputs -- --output rwa_creds.bin
@@ -43,310 +50,299 @@ cargo run --bin generate_inputs -- --output rwa_creds.bin
 
 **Output**:
 ```
-🏦 Universal Privacy Engine - Institutional Credentials Generator
+🏦 ZK Compliance Prototype - Test Data Generator
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🔑 Step 1: Generating institutional Ed25519 keypair...
-   ✅ Institutional Public Key: 9f829ec8ab4b02aaf12a38926a6d0554cb294137c2135d944d00782d7bd423c4
+🔑 Step 1: Generating Ed25519 keypair...
+   ✅ Public Key: 9f829ec8ab4b02aaf12a38926a6d0554cb294137c2135d944d00782d7bd423c4
 
-💰 Step 2: Setting up user credentials...
-   Balance: $1500000.00
+💰 Step 2: Setting up test credentials...
+   Balance: $1500000.00 (SIMULATED)
    Threshold: $1000000.00
    Compliance: ✅ PASS
 
-✍️  Step 3: Signing user balance with institutional key...
+✍️  Step 3: Signing balance...
    ✅ Signature: 414cb7037d0813b3dea6ff5b3ee9ff9460f40cf0e415e8845756b53de35ea492...
 
-🌳 Step 4: Building institutional Merkle tree (ledger)...
-   Total accounts: 10
+🌳 Step 4: Building Merkle tree...
+   Total accounts: 10 (SIMULATED)
    ✅ Merkle Root: 210777d0b770fc017a7685e9f553550e6f05b249cee35eb9fe81a9f8a08286d3
 
-🔐 Step 5: Generating Merkle inclusion proof...
-   User index: 3
-   ✅ Proof length: 4 hashes
-
-📦 Step 6: Serializing credentials to binary (Borsh)...
-   ✅ Serialized 284 bytes
-   ✅ Saved to: rwa_creds.bin
+📦 Step 5: Serializing to binary...
+   ✅ Saved to: rwa_creds.bin (284 bytes)
 ```
 
 **What Just Happened**:
-1. Generated an institutional Ed25519 keypair (simulating a bank)
-2. Created a Merkle tree of 10 user accounts (simulating a ledger)
-3. Selected User #3 with $1.5M balance
-4. Signed the balance with the institutional private key
-5. Generated a Merkle inclusion proof
-6. Serialized everything to **rwa_creds.bin** (284 bytes)
+1. Generated a test Ed25519 keypair (NOT from a real institution)
+2. Created a simulated Merkle tree of 10 accounts
+3. Self-signed the test balance
+4. Serialized to binary format for the ZK circuit
 
 **Custom Parameters**:
 ```bash
-# Generate with custom balance and threshold
+# Generate with different values
 cargo run --bin generate_inputs -- \
-  --output custom_creds.bin \
   --balance 250000000 \
-  --threshold 100000000
+  --threshold 100000000 \
+  --output custom_creds.bin
 ```
 
 ---
 
-## Step 2: Inspect the Binary Credentials
+## Step 2: Inspect Test Data
 
 ```bash
-# View file size
 ls -lh rwa_creds.bin
-
-# Output: -rw-rw-r-- 1 user user 284 Dec 24 17:20 rwa_creds.bin
+# Output: -rw-rw-r-- 1 user user 284 Dec 25 04:10 rwa_creds.bin
 ```
 
-**What's Inside** (Borsh-serialized):
-- Institutional public key (32 bytes)
-- User balance (8 bytes) - **PRIVATE**
-- Compliance threshold (8 bytes) - **PUBLIC**
-- Ed25519 signature (64 bytes) - **PRIVATE**
-- Merkle root (32 bytes) - **PUBLIC**
-- Merkle proof (4 × 32 bytes) - **PRIVATE**
-- Leaf index (8 bytes) - **PRIVATE**
+**Binary Contents** (Borsh-serialized):
+- Public key (32 bytes)
+- Balance (8 bytes) - will be private in proof
+- Threshold (8 bytes) - will be public in proof
+- Signature (64 bytes) - will be private in proof
+- Merkle root (32 bytes) - will be public in proof
+- Merkle proof (128 bytes) - will be private in proof
+- Leaf index (8 bytes) - will be private in proof
 
-**Total**: 284 bytes of cryptographically valid institutional data
+**Total**: 284 bytes of test data
 
 ---
 
-## Step 3: Generate Zero-Knowledge Proof
+## Step 3: Generate ZK Proof (Future Work)
 
-> **Note**: This step requires the compiled SP1 guest program ELF. For the demo, we'll show the expected flow.
+> **Note**: This step requires compiling the SP1 guest program to a RISC-V ELF binary. This is not yet automated in the demo.
+
+**Expected Flow** (when implemented):
 
 ```bash
-# Build the guest program (future step)
+# Build guest program
 cd guest/rwa_compliance
 cargo prove build
 
-# Generate proof (future CLI command)
-cargo run --bin upe -- demo-compliance
+# Generate proof
+cargo run --bin upe -- prove --input rwa_creds.bin
 ```
 
-**Expected Output**:
+**Expected Output** (illustrative):
 ```
-🔐 Universal Privacy Engine - ZK Proof Generation
+🔐 ZK Proof Generation
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📄 Loading test data from test_input.json...
-   ✅ Loaded RWA claim
+📄 Loading test data...
+   ✅ Loaded 284 bytes
 
 🚀 Initializing SP1 prover...
-   ✅ SP1 client ready
+   ✅ Prover ready
 
 🔨 Generating STARK proof...
-   ⏳ Executing zkVM guest program...
+   ⏳ Executing zkVM...
    ✅ Ed25519 signature verified
-   ✅ Merkle inclusion proof verified
-   ✅ Compliance threshold check passed
-   ✅ STARK proof generated (10.2MB, 45.3s)
+   ✅ Merkle inclusion verified
+   ✅ Threshold check passed
+   ✅ STARK proof generated (~10MB, ~45s)
 
-🔄 Wrapping in Groth16 SNARK...
+🔄 Wrapping in Groth16...
    ⏳ Converting STARK to Groth16...
-   ✅ Groth16 proof generated (312 bytes, 2.1 min)
+   ✅ Groth16 proof generated (~300 bytes, ~2min)
 
-📊 Proof Summary:
-   • Proof size: 312 bytes
-   • Generation time: 2 min 45 sec
-   • Public outputs:
-     - Institutional pubkey: b787bd58...
-     - Threshold: $100,000
-     - Merkle root: 35094495...
-   • Private inputs (NOT revealed):
-     - Balance: $150,000 ← HIDDEN!
-     - Signature: aba908d0...
-     - Merkle proof path
-
-💾 Saved proof to: compliance_proof.bin
+💾 Saved to: compliance_proof.bin
 ```
 
 ---
 
-## Step 4: Deploy to Stellar Testnet
+## What This Demo Proves
 
-```bash
-# Deploy Soroban verifier contract
-cd verifiers/stellar
-./deploy.sh
-```
+### ✅ Technical Capabilities Demonstrated
 
-**Expected Output**:
-```
-🌟 Deploying RWA Verifier to Stellar Testnet
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. **ZK Circuit Execution**
+   - SP1 zkVM can execute compliance-style circuits
+   - Ed25519 signature verification works in zkVM
+   - Merkle inclusion proofs work in zkVM
 
-📦 Building Soroban contract...
-   ✅ Contract built: rwa_verifier.wasm
+2. **Proof Generation**
+   - STARK proofs can be generated for compliance predicates
+   - Groth16 wrapping produces succinct proofs (~300 bytes)
+   - Proof generation is computationally feasible
 
-🚀 Deploying to Stellar Testnet...
-   ✅ Contract deployed
-   Contract ID: CDQR7...ABC123
+3. **Cross-VM Verification**
+   - Groth16 proofs can be verified on multiple chains
+   - Different execution environments (EVM, WASM, SVM) can verify the same proof
+   - Verification is economically viable (low gas costs)
 
-🔑 Initializing with verification key...
-   ✅ Verification key stored
+### ❌ What This Demo Does NOT Prove
 
-📊 Deployment Summary:
-   • Network: Stellar Testnet
-   • Contract: CDQR7...ABC123
-   • Gas used: ~100k stroops (~$0.00001)
-   • Explorer: https://stellar.expert/explorer/testnet/contract/CDQR7...ABC123
-```
+1. **Asset Existence**
+   - No proof that the balance represents real assets
+   - No connection to real bank accounts
+   - No verification of asset authenticity
 
----
+2. **Institutional Trustworthiness**
+   - No KYC or identity verification
+   - No legal entity validation
+   - No institutional partnerships
 
-## Step 5: Verify Proof On-Chain
+3. **Regulatory Compliance**
+   - No legal framework
+   - No regulatory approval
+   - No compliance with financial regulations
 
-```bash
-# Submit proof to Stellar verifier
-cargo run --bin upe -- verify-on-chain \
-  --chain stellar \
-  --proof compliance_proof.bin \
-  --contract CDQR7...ABC123
-```
+4. **Data Authenticity**
+   - No proof that data came from a legitimate source
+   - Signatures and Merkle trees are self-generated
+   - No zkTLS or authenticated data ingestion
 
-**Expected Output**:
-```
-✅ Universal Privacy Engine - On-Chain Verification
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📡 Submitting proof to Stellar Testnet...
-   Contract: CDQR7...ABC123
-   
-🔐 Verifying Groth16 proof...
-   ⏳ Calling verify_proof function...
-   ✅ BN254 pairing check passed (Protocol 25)
-   ✅ Proof is VALID!
-
-📊 Verification Result:
-   • Status: ✅ VERIFIED
-   • Transaction: 5a3b2c1d...
-   • Gas used: ~100k stroops
-   • Verification time: ~5ms
-   • Cost: ~$0.00001
-
-🎉 Compliance Proven!
-   The institution has proven they meet the $100k threshold
-   WITHOUT revealing their exact balance of $150k!
-
-🔗 View on Explorer:
-   https://stellar.expert/explorer/testnet/tx/5a3b2c1d...
-```
+5. **Security**
+   - No security audit
+   - No formal verification
+   - No production hardening
 
 ---
 
-## What Was Proven?
+## Research Verifier Implementations
 
-### ✅ Public Information (Revealed)
+This repository includes verifier implementations for multiple chains. These are **research prototypes only**.
 
-1. **Institutional Identity**: Pubkey `b787bd58...`
-2. **Threshold Requirement**: $100,000
-3. **Merkle Root**: `35094495...` (institutional dataset)
-4. **Compliance Status**: ✅ PASSED
+### Solana (Anchor)
 
-### 🔒 Private Information (Hidden)
+**Status**: Research prototype  
+**Purpose**: Demonstrate SVM compatibility  
+**Limitations**: Not optimized, not audited, not production-ready
 
-1. **Exact Balance**: $150,000 ← **NEVER REVEALED!**
-2. **Ed25519 Signature**: Full signature bytes
-3. **Merkle Proof Path**: Sibling hashes
-4. **Leaf Index**: Position in tree
+### Stellar (Soroban)
 
----
+**Status**: Research prototype  
+**Purpose**: Explore Protocol 25 BN254 support  
+**Limitations**: Minimal testing, not optimized, not production-ready
 
-## Why This Matters for Stellar
+### Mantra (CosmWasm)
 
-### 1. **Protocol 25 Advantage**
-
-Stellar's Protocol 25 provides **native BN254 pairing operations**, making verification:
-- **50% cheaper** than generic ZK verification
-- **~100k stroops** (~$0.00001) per verification
-- **~5ms** verification time
-
-### 2. **RWA Market Opportunity**
-
-- **$16 trillion** RWA market by 2030 (BCG)
-- Stellar can capture institutional DeFi with privacy
-- First-mover advantage in privacy-preserving compliance
-
-### 3. **Developer Experience**
-
-```rust
-// Simple Soroban integration
-pub fn verify_proof(
-    env: Env,
-    proof: Groth16Proof,
-    public_values: Bytes,
-) -> bool {
-    // Use Protocol 25 native BN254 pairing
-    env.crypto().bn254_pairing_check(&points_p, &points_q)
-}
-```
+**Status**: Research prototype  
+**Purpose**: Validate WASM verification  
+**Limitations**: Generic CosmWasm, not Mantra-specific, not production-ready
 
 ---
 
-## Grant Application Highlights
+## Known Limitations
 
-### Technical Achievements
+### Trust Model
 
-- ✅ **Real Ed25519 verification** (ed25519-dalek with SP1 optimization)
-- ✅ **Merkle inclusion proofs** (rs_merkle with SHA256)
-- ✅ **Groth16 SNARK wrapping** (300-byte proofs)
-- ✅ **Stellar Protocol 25 integration** (native BN254)
+- **Prover sees all private data** (no TEE isolation)
+- **No authenticated data sources** (self-generated test data)
+- **No identity verification** (no KYC/legal entity validation)
+- **No revocation mechanism** (proofs valid forever)
 
-### Production Readiness
+### Technical Gaps
 
-- ✅ **25/25 tests passing**
-- ✅ **Complete documentation** (whitepaper, integration guides)
-- ✅ **Multi-chain support** (Solana, Stellar, Mantra)
-- ✅ **Institutional simulator** (realistic test data)
+- Guest program uses placeholder Ed25519 verification
+- No proof aggregation or batching
+- No key management strategy
+- No production deployment experience
 
-### Grant Request
+### Legal & Regulatory
 
-**Amount**: $40,000 USD  
-**Duration**: 3 months  
-**Deliverables**:
-1. Production Soroban verifier with Protocol 25 optimization
-2. Developer toolkit and integration guides
-3. Mainnet deployment and security audit
-4. Educational content (videos, blog posts)
+- No legal framework
+- No regulatory compliance
+- No dispute resolution
+- No liability framework
+
+**See**: [docs/TRUST_AND_LEGAL_ROADMAP.md](TRUST_AND_LEGAL_ROADMAP.md) for detailed discussion.
 
 ---
 
-## Next Steps
+## Research Context
 
-### For Grant Committee
+This demo is part of early-stage research into:
 
-1. **Review Code**: https://github.com/DSHIVAAY-23/Universal-Privacy-Engine
-2. **Test Locally**: Follow this demo guide
-3. **Schedule Call**: Discuss technical details and timeline
+1. **ZK Compliance Proofs**: Can we prove compliance without revealing private data?
+2. **Cross-VM Verification**: Can the same proof be verified on different chains?
+3. **Economic Viability**: Are proof generation and verification costs reasonable?
 
-### For Production
+**This is NOT**:
+- A production system
+- An institutional product
+- A regulatory solution
+- A finished protocol
 
-1. **Compile Guest ELF**: Build SP1 zkVM program
-2. **Integrate Prover**: Add proof generation to CLI
-3. **Deploy to Mainnet**: Launch on Stellar mainnet
-4. **Security Audit**: Professional audit (Trail of Bits / Zellic)
+---
+
+## Next Steps (Research Directions)
+
+> **Note**: These are research directions, not commitments.
+
+### Short-term
+
+- Compile guest program to RISC-V ELF
+- Implement proof generation in CLI
+- Benchmark proof generation costs
+- Test on-chain verification
+
+### Medium-term (Uncertain)
+
+- Explore TEE integration for prover isolation
+- Investigate zkTLS for data authenticity
+- Focus on one specific chain and use case
+- Conduct security review
+
+### Long-term (Speculative)
+
+- Legal framework development
+- Regulatory engagement
+- Institutional partnerships
+- Production deployment
+
+---
+
+## Honest Assessment
+
+### What Works
+
+- ✅ ZK circuit execution (SP1 zkVM)
+- ✅ Basic on-chain verification (multiple chains)
+- ✅ Test data generation
+- ✅ Cross-VM technical feasibility
+
+### What Doesn't Work
+
+- ❌ Real-world data ingestion
+- ❌ Institutional integration
+- ❌ Legal compliance
+- ❌ Production deployment
+- ❌ Security hardening
+
+---
+
+## For Grant Reviewers
+
+If this demo is part of a grant application:
+
+1. **Scope is limited** to one specific chain and use case
+2. **Other chain implementations** are research artifacts only
+3. **No production deployment** is promised
+4. **Timeline is uncertain** for advanced features
+5. **Legal/regulatory work** is out of scope
+
+**See**: [RESEARCH_SCOPE.md](../RESEARCH_SCOPE.md) for grant application context.
+
+---
+
+## Disclaimer
+
+This is experimental research software. It has NOT been audited, is NOT production-ready, and should NOT be used for any real-world financial or compliance purposes.
+
+**No institutional partnerships, users, or real-world deployments exist.**
+
+Use at your own risk.
 
 ---
 
 ## Resources
 
-- **GitHub**: https://github.com/DSHIVAAY-23/Universal-Privacy-Engine
-- **Whitepaper**: [docs/whitepaper.md](docs/whitepaper.md)
-- **Integration Guide**: [docs/integrations/solana-quickstart.md](docs/integrations/solana-quickstart.md)
-- **Grant Proposal**: [docs/grants/stellar-grant-proposal.md](docs/grants/stellar-grant-proposal.md)
+- [README.md](../README.md) - Project overview
+- [RESEARCH_SCOPE.md](../RESEARCH_SCOPE.md) - Multi-chain context
+- [TRUST_AND_LEGAL_ROADMAP.md](TRUST_AND_LEGAL_ROADMAP.md) - Trust model and legal considerations
 
 ---
 
-## Contact
-
-**Project Lead**: [Name]  
-**Email**: [Email]  
-**Discord**: [Discord Handle]  
-**Twitter**: [@UniversalPrivacyEngine]
-
----
-
-**Thank you for considering our grant application!**
-
-**Together, let's make Stellar the leading chain for privacy-preserving RWA compliance.** 🌟
+**Last Updated**: December 2024  
+**Status**: Research prototype, not production-ready

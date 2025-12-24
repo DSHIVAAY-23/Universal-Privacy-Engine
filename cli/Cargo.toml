@@ -1,0 +1,34 @@
+[package]
+name = "universal-privacy-engine-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "upe"
+path = "src/main.rs"
+
+[dependencies]
+# Core abstraction and SP1 implementation
+universal-privacy-engine-core = { path = "../core" }
+universal-privacy-engine-sp1 = { path = "../adapters/sp1" }
+
+# CLI argument parsing
+clap.workspace = true
+
+# Application-level error handling (user-friendly errors)
+anyhow.workspace = true
+
+# Async runtime
+tokio.workspace = true
+
+# Serialization for reading/writing receipts
+serde.workspace = true
+bincode.workspace = true
+
+# Hex encoding/decoding for user input
+hex = "0.4"
+
+# File I/O
+std-fs = { version = "0.1", package = "fs-err" }

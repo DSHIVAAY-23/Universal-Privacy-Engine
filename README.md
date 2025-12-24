@@ -1,434 +1,233 @@
-# Universal Privacy Engine
+# ZK Compliance Execution Prototype (Research)
 
-> **Multi-Chain RWA Compliance Layer with Zero-Knowledge Proofs and Agentic Automation**
+> **Status**: Early-stage research prototype. NOT production-ready.
 
-[![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org/)
-[![SP1](https://img.shields.io/badge/SP1-3.4-blue.svg)](https://github.com/succinctlabs/sp1)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](#test-results)
-
-## Elevator Pitch
-
-The **Universal Privacy Engine** is a production-ready framework for generating and verifying zero-knowledge proofs of Real-World Asset (RWA) compliance across multiple blockchains. It combines:
-
-- **🔐 SP1 zkVM**: RISC-V zero-knowledge virtual machine for private computation
-- **🤖 Agentic Automation**: Natural language interface via Model Context Protocol (MCP)
-- **⛓️ Multi-Chain Support**: Solana, Stellar, and Mantra verifiers
-- **📊 RWA Compliance**: Prove asset ownership without revealing balances
-
-**Use Case**: An institution can prove they hold ≥$50M in assets without revealing the exact amount, enabling privacy-preserving compliance for DeFi protocols.
+This repository demonstrates zero-knowledge proof generation and verification for compliance-style predicates across different execution environments. It is a **research artifact** exploring the technical feasibility of privacy-preserving compliance proofs, not a finished protocol or institutional product.
 
 ---
 
-## Quick Start
+## Current Focus
 
-### Prerequisites
+This prototype uses **SP1 (RISC-V zkVM)** to generate proofs of compliance predicates (e.g., "balance ≥ threshold") without revealing private data. Any grant-funded work is scoped to **one specific chain** (e.g., Fuse/EVM or Stellar), with other chain implementations serving as exploratory research artifacts to validate cross-VM feasibility.
 
-```bash
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+**Primary Research Question**: Can we generate succinct, verifiable proofs of compliance predicates that preserve privacy while being economically viable on-chain?
 
-# Install SP1
-curl -L https://sp1.succinct.xyz | bash
-sp1up
+---
 
-# Clone repository
-git clone https://github.com/DSHIVAAY-23/Universal-Privacy-Engine.git
-cd Universal-Privacy-Engine
-```
+## What This Repo Is / Is Not
 
-### 3-Command "Whale Proof" Demo
+### ✅ This Repository IS:
 
-```bash
-# 1. Build the workspace
-cargo build --release
+- A **ZK execution prototype** demonstrating SP1 zkVM integration
+- **Verifier experiments** for multiple execution environments (EVM, Soroban, CosmWasm)
+- **Compliance-style circuits** showing threshold checks and Merkle inclusion
+- **Research code** exploring cross-chain ZK verification patterns
 
-# 2. Run agent tests (includes extraction, validation, audit trail)
-cargo test --workspace
+### ❌ This Repository IS NOT:
 
-# 3. Start MCP server for Cursor/Claude integration
-cargo run --bin upe -- mcp-server
-```
+- A production system ready for institutional use
+- A universal privacy adapter for all blockchains
+- A legally compliant RWA verification protocol
+- An audited or security-reviewed codebase
+- A product with real-world users or partners
 
-**Expected Output**:
-```
-🚀 VeriVault MCP Server
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📡 Listening on stdio for MCP requests
-✅ 14/14 tests passing
-```
+---
+
+## Known Limitations & Open Problems
+
+### Critical Trust Assumptions
+
+1. **Prover Sees Private Data**
+   - The SP1 prover currently runs on the user's machine and has access to all private inputs
+   - No TEE (Trusted Execution Environment) isolation yet
+   - This is a fundamental limitation for institutional use cases
+
+2. **No Authenticated Data Ingestion**
+   - No zkTLS or HTTPS-based data authenticity
+   - No cryptographic proof that input data came from a legitimate source
+   - Merkle trees and signatures are self-generated, not from real institutions
+
+3. **No Legal Attestation Framework**
+   - No regulatory compliance validation
+   - No legal entity attestation
+   - No connection to real-world identity or KYC systems
+
+4. **No Revocation or Dispute Mechanism**
+   - Proofs are one-time, non-revocable
+   - No way to invalidate a proof if circumstances change
+   - No dispute resolution process
+
+5. **No Security Audit**
+   - Code has not been professionally audited
+   - Cryptographic implementations may have vulnerabilities
+   - Smart contracts have not been formally verified
+
+6. **Economic Viability Uncertain**
+   - Proof generation costs (time, compute) not optimized
+   - Gas costs for verification not benchmarked at scale
+   - No analysis of economic attack vectors
+
+### Technical Gaps
+
+- Guest program uses placeholder Ed25519 verification (not full SP1 precompile integration)
+- Merkle tree implementation not optimized for production scale
+- No proof aggregation or batching
+- No key management or rotation strategy
+- No monitoring or observability infrastructure
 
 ---
 
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                  Universal Privacy Engine                        │
-└─────────────────────────────────────────────────────────────────┘
-
-   User Input                    Agent Layer                  Proof Layer
-   ──────────                    ───────────                  ───────────
-        │                             │                            │
-        │  Natural Language           │   Structured Data          │   ZK Proof
-        │  "Prove $50k"               │   RwaClaim                 │   Groth16
-        │                             │                            │
-        ▼                             ▼                            ▼
-   ┌──────────┐              ┌──────────────┐            ┌──────────────┐
-   │ Cursor/  │─────────────▶│ MCP Server   │───────────▶│ SP1 Prover   │
-   │ Claude   │              │ (4 tools)    │            │ (RISC-V)     │
-   └──────────┘              └──────────────┘            └──────────────┘
-                                     │                            │
-                                     │                            │
-                                     ▼                            ▼
-                              ┌──────────────┐            ┌──────────────┐
-                              │ Extractor    │            │ Guest Program│
-                              │ Validator    │            │ (zkVM)       │
-                              │ Orchestrator │            └──────────────┘
-                              └──────────────┘                    │
-                                     │                            │
-                                     │                            ▼
-                                     │                     ┌──────────────┐
-                                     │                     │ STARK→Groth16│
-                                     │                     │ (~300 bytes) │
-                                     │                     └──────────────┘
-                                     │                            │
-                                     ▼                            ▼
-                              ┌──────────────────────────────────────┐
-                              │      Multi-Chain Verifiers           │
-                              ├──────────┬──────────┬────────────────┤
-                              │ Solana   │ Stellar  │ Mantra         │
-                              │ (Anchor) │(Soroban) │(CosmWasm/EVM)  │
-                              └──────────┴──────────┴────────────────┘
+User → SP1 Prover → Groth16 SNARK → On-Chain Verifier
+  │         │            │                 │
+  │         │            │                 ├─ Solana (Research)
+  │         │            │                 ├─ Stellar (Research)
+  │         │            │                 └─ Mantra (Research)
+  │         │            │
+  │         │            └─ ~300 bytes proof
+  │         │
+  │         └─ RISC-V zkVM execution
+  │
+  └─ Private inputs (balance, signature, Merkle proof)
 ```
+
+**Key Components**:
+- **Guest Program** (`guest/rwa_compliance`): RISC-V binary running in SP1 zkVM
+- **SP1 Adapter** (`adapters/sp1`): Proof generation and verification
+- **Verifiers** (`verifiers/`): On-chain verification contracts (research prototypes)
+- **CLI** (`cli`): Command-line interface for proof generation
 
 ---
 
-## Technology Stack
+## Workspace Structure
 
-### Core Technologies
+```
+├── core/                    # Trait definitions and shared types
+├── adapters/sp1/            # SP1 zkVM integration
+├── guest/rwa_compliance/    # RISC-V guest program (compliance circuit)
+├── verifiers/               # On-chain verifiers (research prototypes)
+│   ├── solana/              # Anchor program (research)
+│   ├── stellar/             # Soroban contract (research)
+│   └── mantra/              # CosmWasm contract (research)
+├── cli/                     # Command-line tools
+├── scripts/                 # Test data generation
+└── docs/                    # Documentation
+```
 
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| **ZK Backend** | [SP1 3.4](https://github.com/succinctlabs/sp1) | RISC-V zkVM for proof generation |
-| **Proof System** | Groth16 (BN254) | SNARK wrapping for on-chain verification |
-| **Agent Framework** | Model Context Protocol | Natural language interface |
-| **Solana Verifier** | Anchor 0.30 | On-chain proof verification |
-| **Stellar Verifier** | Soroban SDK 21.0 | Protocol 25 BN254 pairing |
-| **Mantra Verifier** | CosmWasm 2.0 | Cosmos-based verification |
-
-### Language & Build
-
-- **Rust 1.75+**: Systems programming language
-- **Cargo**: Build system and package manager
-- **Borsh**: Deterministic serialization for zkVM
+**Note**: Verifier implementations for Solana, Stellar, and Mantra are **research prototypes** demonstrating cross-VM feasibility. They are not production-ready and have not been audited.
 
 ---
 
-## Project Structure
+## Quick Start (Research Demo)
 
+### Prerequisites
+
+- Rust 1.75+
+- SP1 toolchain (see [SP1 docs](https://docs.succinct.xyz/))
+
+### Generate Test Credentials
+
+```bash
+# Generate cryptographically valid test data
+cargo run --bin generate_inputs -- --output rwa_creds.bin
 ```
-universal-privacy-engine/
-├── core/                          # Core abstraction layer
-│   ├── src/
-│   │   ├── lib.rs                 # PrivacyEngine trait
-│   │   ├── rwa.rs                 # RWA compliance types
-│   │   ├── agent/                 # Agentic automation
-│   │   │   ├── extractor.rs       # LLM-based data parsing
-│   │   │   ├── validator.rs       # Schema validation
-│   │   │   └── orchestrator.rs    # Multi-chain orchestration
-│   │   └── logging/               # Audit trails
-│   │       └── audit.rs           # ZK audit trail
-│   └── Cargo.toml
-│
-├── adapters/sp1/                  # SP1 backend implementation
-│   ├── src/
-│   │   └── lib.rs                 # Sp1Backend + Groth16 support
-│   ├── tests/
-│   │   └── integration_test.rs    # Integration tests
-│   └── Cargo.toml
-│
-├── guest/rwa_compliance/          # SP1 guest program (RISC-V)
-│   ├── src/
-│   │   └── main.rs                # RWA compliance logic
-│   └── Cargo.toml
-│
-├── cli/                           # Command-line interface
-│   ├── src/
-│   │   ├── main.rs                # CLI commands
-│   │   └── mcp/                   # MCP server
-│   │       ├── server.rs          # MCP server implementation
-│   │       └── tools.rs           # Tool definitions
-│   └── Cargo.toml
-│
-├── verifiers/                     # On-chain verifiers
-│   ├── solana/                    # Solana Anchor program
-│   │   ├── programs/rwa-verifier/
-│   │   │   └── src/lib.rs         # Anchor verifier
-│   │   ├── Anchor.toml
-│   │   └── deploy.sh              # Deployment script
-│   │
-│   ├── stellar/                   # Stellar Soroban contract
-│   │   ├── src/lib.rs             # Soroban verifier
-│   │   ├── Cargo.toml
-│   │   └── deploy.sh
-│   │
-│   └── mantra/                    # Mantra CosmWasm contract
-│       ├── src/lib.rs             # CosmWasm verifier
-│       ├── Cargo.toml
-│       └── deploy.sh
-│
-├── docs/                          # Documentation
-│   ├── flow.md                    # System flow diagrams
-│   └── benchmarks.md              # Performance metrics
-│
-├── README.md                      # This file
-├── CLAUDE.md                      # AI context documentation
-└── Cargo.toml                     # Workspace configuration
+
+**What this does**: Creates a simulated institutional credential with Ed25519 signature and Merkle proof. This is **test data only** and does not represent real institutional assets.
+
+### Build Guest Program
+
+```bash
+cd guest/rwa_compliance
+cargo build --release
 ```
+
+### Run Tests
+
+```bash
+cargo test --workspace
+```
+
+**Current Status**: 25/25 tests passing (unit tests only, no integration tests)
 
 ---
 
-## Features
+## Planned Research Directions
 
-### Phase 1: Core Infrastructure ✅
-- ✅ Backend-agnostic `PrivacyEngine` trait
-- ✅ SP1 adapter with proving/verifying keys
-- ✅ CLI with `prove`, `verify`, `export-verifier` commands
-- ✅ Comprehensive error handling
+> **Note**: These are research directions, not commitments or timelines.
 
-### Phase 2: RWA Compliance Guest Program ✅
-- ✅ Ed25519 signature verification (SP1 precompile)
-- ✅ Balance threshold checking
-- ✅ Private balance, public compliance
-- ✅ Borsh serialization for zkVM
+### Short-term (Exploratory)
 
-### Phase 3: Multi-Chain Verifier Bridge ✅
-- ✅ Groth16 SNARK wrapping (STARK→Groth16)
-- ✅ Solana Anchor verifier (<300k CU)
-- ✅ Stellar Soroban verifier (Protocol 25 bn254)
-- ✅ Mantra CosmWasm verifier
-- ✅ Verification key export
+- **TEE-hosted SP1 Prover**: Investigate running prover in SGX/Nitro/SEV enclave
+- **zkTLS Integration**: Explore HTTPS-based data authenticity proofs
+- **Chain-specific Vertical MVP**: Focus on one use case (e.g., payroll compliance on Fuse)
 
-### Phase 4: Agentic Automation ✅
-- ✅ MCP server for Cursor/Claude integration
-- ✅ Structured data extraction with PII sanitization
-- ✅ Schema validation
-- ✅ ZK audit trail with tamper detection
-- ✅ Multi-chain orchestration
+### Medium-term (Uncertain)
+
+- Proof aggregation and batching
+- Key management and rotation
+- Economic attack analysis
+- Formal verification of circuits
+
+### Long-term (Speculative)
+
+- Legal attestation framework
+- Regulatory compliance validation
+- Multi-party computation for distributed proving
+- Hardware acceleration
 
 ---
 
-## Usage Examples
+## Grant Application Context
 
-### 1. Generate RWA Compliance Proof
+If this repository is part of a grant application, the scope is limited to:
 
-```bash
-# Create a claim (in production, use real Ed25519 signature)
-upe prove --input <hex_claim> --elf guest/rwa_compliance/elf/... --output proof.bin
-```
+1. **One specific chain** (e.g., Fuse/EVM, Stellar, or Mantra)
+2. **One specific use case** (e.g., payroll compliance, asset verification)
+3. **Research deliverables**, not production deployment
 
-### 2. Verify Proof
-
-```bash
-upe verify --receipt proof.bin --elf guest/rwa_compliance/elf/...
-```
-
-### 3. Export Verifier for Solana
-
-```bash
-upe export-verifier --chain solana --elf guest/rwa_compliance/elf/... --output verifier.so
-```
-
-### 4. Use MCP Agent (Cursor/Claude)
-
-```bash
-# Start MCP server
-upe mcp-server
-
-# In Cursor, configure MCP and use natural language:
-"Extract claim from this bank statement showing $75,000 with $50k threshold"
-```
-
----
-
-## Test Results
-
-### Comprehensive Test Suite
-
-```bash
-$ cargo test --workspace
-```
-
-**Results**:
-- ✅ Core library tests: 6/6 passing
-- ✅ Agent tests: 6/6 passing
-- ✅ Logging tests: 5/5 passing
-- ✅ MCP server tests: 3/3 passing
-- ✅ Integration tests: 5/5 passing
-
-**Total: 25/25 tests passing** 🎉
-
-### Code Statistics
-
-- **Total Lines**: ~6,800 lines of Rust
-- **Files**: 34 Rust source files
-- **Workspace Members**: 7 crates
-- **Test Coverage**: All critical paths tested
-
----
-
-## Performance Benchmarks
-
-| Operation | Time | Proof Size | Gas Cost |
-|-----------|------|------------|----------|
-| Data Extraction | ~100ms | - | - |
-| STARK Generation | 30-60s | ~10MB | - |
-| Groth16 Wrapping | 2-3min | ~300 bytes | - |
-| Solana Verification | ~10ms | - | ~250k CU |
-| Stellar Verification | ~5ms | - | ~100k stroops |
-| Mantra Verification | ~15ms | - | ~500k gas |
-
-**See [`docs/benchmarks.md`](docs/benchmarks.md) for detailed metrics.**
-
----
-
-## Security
-
-### Threat Model
-
-1. **Malicious User**: Cannot forge proofs (cryptographic soundness)
-2. **Compromised LLM**: PII sanitization prevents data leakage
-3. **Tampered Audit Trail**: Integrity verification detects modifications
-4. **Replay Attacks**: Nonces and timestamps prevent reuse
-
-### Privacy Guarantees
-
-- ✅ **Balance Privacy**: Actual balance never revealed on-chain
-- ✅ **PII Protection**: SSN, account numbers sanitized before LLM
-- ✅ **Local Processing**: No cloud APIs for sensitive data
-- ✅ **Audit Trail**: Verifiable log of all agent decisions
-
----
-
-## Deployment
-
-### Solana Devnet
-
-```bash
-cd verifiers/solana
-./deploy.sh
-```
-
-### Stellar Testnet
-
-```bash
-cd verifiers/stellar
-./deploy.sh
-```
-
-### Mantra Testnet
-
-```bash
-cd verifiers/mantra
-./deploy.sh
-```
+Other chain implementations in this repository are **research artifacts** demonstrating technical feasibility and are not in scope for any single grant.
 
 ---
 
 ## Contributing
 
-We welcome contributions! Please see our [contribution guidelines](CONTRIBUTING.md).
+This is a research prototype. Contributions are welcome, but please understand:
 
-### Development Setup
-
-```bash
-# Clone repository
-git clone https://github.com/DSHIVAAY-23/Universal-Privacy-Engine.git
-cd Universal-Privacy-Engine
-
-# Install dependencies
-cargo build
-
-# Run tests
-cargo test --workspace
-
-# Format code
-cargo fmt --all
-
-# Lint
-cargo clippy --all-targets --all-features
-```
-
----
-
-## Roadmap
-
-### Q1 2025
-- [ ] LLM integration (OpenAI/Anthropic SDK)
-- [ ] Real proof generation with compiled guest ELF
-- [ ] Production blockchain integration
-- [ ] Mainnet deployment (Solana/Stellar/Mantra)
-
-### Q2 2025
-- [ ] Multi-asset support (BTC, ETH, stablecoins)
-- [ ] Range proofs (prove balance in range)
-- [ ] Merkle tree whitelisting
-- [ ] Hardware wallet integration
-
-### Q3 2025
-- [ ] Web UI for non-technical users
-- [ ] Mobile SDK
-- [ ] Additional chain support (Ethereum, Polygon, Avalanche)
-- [ ] Proof aggregation for batch verification
-
----
-
-## Grant Applications
-
-This project is seeking grants from:
-- **Solana Foundation**: For Anchor verifier optimization
-- **Stellar Development Foundation**: For Protocol 25 bn254 integration
-- **Mantra DAO**: For RWA compliance infrastructure
+- No production use cases are supported
+- No guarantees of backward compatibility
+- Code may change significantly as research evolves
+- Security issues should be reported via GitHub issues (no bug bounty)
 
 ---
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT OR Apache-2.0
 
 ---
 
-## Acknowledgments
+## Disclaimer
 
-- **Succinct Labs**: For the SP1 zkVM
-- **Solana Foundation**: For Anchor framework
-- **Stellar Development Foundation**: For Soroban SDK
-- **Mantra DAO**: For CosmWasm support
+**THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.**
+
+This is experimental research software. It has not been audited, is not production-ready, and should not be used for any real-world financial or compliance purposes. The authors make no claims about the security, correctness, or suitability of this code for any particular use case.
+
+**No institutional partnerships, users, or real-world deployments exist.**
+
+---
+
+## References
+
+- [SP1 Documentation](https://docs.succinct.xyz/)
+- [Groth16 Paper](https://eprint.iacr.org/2016/260.pdf)
+- [Zero-Knowledge Proofs: An Introduction](https://z.cash/technology/zksnarks/)
 
 ---
 
 ## Contact
 
-- **GitHub**: [DSHIVAAY-23/Universal-Privacy-Engine](https://github.com/DSHIVAAY-23/Universal-Privacy-Engine)
-- **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/DSHIVAAY-23/Universal-Privacy-Engine/issues)
+For research collaboration or technical questions, please open a GitHub issue.
 
----
-
-## Citation
-
-If you use this project in your research, please cite:
-
-```bibtex
-@software{universal_privacy_engine,
-  title = {Universal Privacy Engine: Multi-Chain RWA Compliance with Zero-Knowledge Proofs},
-  author = {DSHIVAAY-23},
-  year = {2024},
-  url = {https://github.com/DSHIVAAY-23/Universal-Privacy-Engine}
-}
-```
-
----
-
-**Built with ❤️ using Rust, SP1, and Zero-Knowledge Proofs**
+**No commercial inquiries. No partnership requests. Research only.**

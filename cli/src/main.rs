@@ -21,6 +21,9 @@ use std::path::PathBuf;
 use universal_privacy_engine_core::{ChainType, PrivacyEngine, ProofReceipt};
 use universal_privacy_engine_sp1::Sp1Backend;
 
+mod mcp;
+use mcp::VeriVaultMcpServer;
+
 /// Universal Privacy Engine - Chain-agnostic ZK proving CLI
 #[derive(Parser)]
 #[command(name = "upe")]
@@ -72,6 +75,9 @@ enum Commands {
         #[arg(short, long)]
         output: PathBuf,
     },
+
+    /// Start MCP server for Cursor/Claude integration
+    McpServer,
 }
 
 /// CLI-friendly version of ChainType with clap integration
@@ -105,6 +111,9 @@ async fn main() -> Result<()> {
         }
         Commands::ExportVerifier { chain, elf, output } => {
             export_verifier_command(chain, elf, output).await?;
+        }
+        Commands::McpServer => {
+            mcp_server_command()?;
         }
     }
 
@@ -249,5 +258,18 @@ async fn export_verifier_command(
         }
     }
 
+    Ok(())
+}
+
+/// Execute the MCP server command
+fn mcp_server_command() -> Result<()> {
+    println!("🚀 VeriVault MCP Server");
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    println!("📡 Starting MCP server for Cursor/Claude integration...");
+    println!();
+    
+    let mut server = VeriVaultMcpServer::new();
+    server.run().context("MCP server failed")?;
+    
     Ok(())
 }

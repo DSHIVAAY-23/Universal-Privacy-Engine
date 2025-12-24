@@ -4,6 +4,7 @@ members = [
     "adapters/sp1",
     "cli",
     "guest/rwa_compliance",
+    "scripts",
 ]
 
 # Enforce consistent Rust edition across all workspace members

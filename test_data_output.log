@@ -1,0 +1,60 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/user/.gemini/antigravity/playground/zonal-halley/guest/rwa_compliance/Cargo.toml
+workspace: /home/user/.gemini/antigravity/playground/zonal-halley/Cargo.toml
+   Compiling test-data-generator v0.1.0 (/home/user/.gemini/antigravity/playground/zonal-halley/scripts)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.52s
+     Running `target/debug/generate-test-data`
+🏦 Universal Privacy Engine - Institutional Test Data Generator
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 Step 1: Generating institutional Ed25519 keypair...
+   ✅ Institutional Public Key: b787bd58ac685cb217a83ee06e67fb44aa5dafc5add2bef8b044c1641d6b2540
+
+💰 Step 2: Creating 10 dummy user accounts...
+   User 1: $50000.00
+   User 2: $100000.00
+   User 3: $75000.00
+   User 4: $20000.00
+   User 5: $150000.00
+   User 6: $30000.00
+   User 7: $80000.00
+   User 8: $10000.00
+   User 9: $120000.00
+   User 10: $60000.00
+
+🌳 Step 3: Building Merkle tree from user balances...
+   ✅ Merkle Root: 350944952f7e2f3dcd86df3779cade9ec50d71b31591e02b58d51398f30cb738
+
+👤 Step 4: Selecting test user for proof...
+   User ID: 5
+   Balance: $150000.00
+
+🔐 Step 5: Generating Merkle inclusion proof...
+   ✅ Proof length: 4 hashes
+
+✍️  Step 6: Signing user balance with institutional key...
+   ✅ Signature: aba908d07edadb8dff17a25560be31b1e2f9428263c57587eeae569a035d6727155fc0247027893603f17ad01718f2d87763892af6ddbdb02238808576519b0f
+
+📋 Step 7: Creating RWA Claim...
+   Balance: $150000.00
+   Threshold: $100000.00
+   Compliance: ✅ PASS
+
+💾 Step 8: Exporting test data to JSON...
+   ✅ Saved to: test_input.json
+   File size: 2674 bytes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Test data generation complete!
+
+📊 Summary:
+   • Total users in tree: 10
+   • Test user balance: $150000.00
+   • Compliance threshold: $100000.00
+   • Merkle proof length: 4 hashes
+   • Institutional pubkey: b787bd58ac685cb217a83ee06e67fb44aa5dafc5add2bef8b044c1641d6b2540
+
+🚀 Next steps:
+   1. Run: cargo run --bin upe -- demo-compliance
+   2. Watch the ZK proof generation!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

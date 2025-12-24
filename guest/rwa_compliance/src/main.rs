@@ -7,12 +7,12 @@
 #![no_main]
 sp1_zkvm::entrypoint!(main);
 
-use borsh::BorshDeserialize;
+use borsh::{BorshDeserialize, BorshSerialize};
 use rs_merkle::{MerkleProof, algorithms::Sha256};
 use sha2::{Sha256 as Sha256Hasher, Digest};
 
 /// RWA Claim with Merkle proof
-#[derive(BorshDeserialize)]
+#[derive(BorshSerialize, BorshDeserialize)]
 pub struct RwaClaimWithProof {
     /// Institutional public key (32 bytes)
     pub institutional_pubkey: [u8; 32],
@@ -38,7 +38,8 @@ pub struct RwaClaimWithProof {
 
 pub fn main() {
     // Read and deserialize input
-    let claim = RwaClaimWithProof::try_from_slice(&sp1_zkvm::io::read_vec())
+    let input_bytes = sp1_zkvm::io::read_vec();
+    let claim = RwaClaimWithProof::try_from_slice(&input_bytes)
         .expect("Failed to deserialize RwaClaimWithProof");
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -103,7 +104,7 @@ pub fn main() {
 fn verify_ed25519_signature(
     signature: &[u8; 64],
     public_key: &[u8; 32],
-    message: &[u8],
+    _message: &[u8],
 ) -> bool {
     // Validate lengths
     if signature.len() != 64 || public_key.len() != 32 {

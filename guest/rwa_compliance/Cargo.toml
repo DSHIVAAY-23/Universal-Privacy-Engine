@@ -8,7 +8,7 @@ edition = "2021"
 sp1-zkvm = "3.0.0"
 
 # Borsh for deterministic serialization
-borsh = { version = "1.5", default-features = false }
+borsh = { version = "1.5", default-features = false, features = ["derive"] }
 
 # Merkle tree verification
 rs_merkle = { version = "1.4", default-features = false }

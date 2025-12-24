@@ -43,20 +43,30 @@ pub fn main() {
         .expect("Failed to deserialize RwaClaimWithProof");
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // Step 1: Ed25519 Signature Verification
+    // Step 1: Ed25519 Signature Verification (REAL SP1 PRECOMPILE)
+    // ═══════════════════════════════════════════════════════════════════════════
+    //
+    // This uses the SP1 hardware accelerator for Ed25519 verification.
+    // This is 10-100x faster than pure Rust implementation.
+    //
+    // CRITICAL: We use ed25519-dalek with SP1's optimized syscalls
     // ═══════════════════════════════════════════════════════════════════════════
     
-    let message = claim.balance.to_le_bytes();
-    let signature_valid = verify_ed25519_signature(
-        &claim.signature,
-        &claim.institutional_pubkey,
-        &message,
-    );
+    use ed25519_dalek::{Verifier, VerifyingKey, Signature};
     
-    assert!(
-        signature_valid,
-        "Ed25519 signature verification failed"
-    );
+    let message = claim.balance.to_le_bytes();
+    
+    // Create Ed25519 verifying key from institutional pubkey
+    let verifying_key = VerifyingKey::from_bytes(&claim.institutional_pubkey)
+        .expect("Invalid Ed25519 public key");
+    
+    // Create signature from bytes
+    let signature = Signature::from_bytes(&claim.signature);
+    
+    // VERIFY SIGNATURE - This will PANIC if invalid!
+    // SP1 optimizes the underlying curve operations via syscalls
+    verifying_key.verify(&message, &signature)
+        .expect("Ed25519 signature verification failed");
 
     // ═══════════════════════════════════════════════════════════════════════════
     // Step 2: Merkle Inclusion Proof Verification
@@ -98,24 +108,6 @@ pub fn main() {
     sp1_zkvm::io::commit(&claim.institutional_pubkey);
     sp1_zkvm::io::commit(&claim.threshold);
     sp1_zkvm::io::commit(&claim.merkle_root);
-}
-
-/// Verify Ed25519 signature
-fn verify_ed25519_signature(
-    signature: &[u8; 64],
-    public_key: &[u8; 32],
-    _message: &[u8],
-) -> bool {
-    // Validate lengths
-    if signature.len() != 64 || public_key.len() != 32 {
-        return false;
-    }
-    
-    // Check non-zero (placeholder for real verification)
-    let sig_valid = signature.iter().any(|&b| b != 0);
-    let pk_valid = public_key.iter().any(|&b| b != 0);
-    
-    sig_valid && pk_valid
 }
 
 /// Verify Merkle inclusion proof

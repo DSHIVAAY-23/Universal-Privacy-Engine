@@ -18,6 +18,7 @@ tokio.workspace = true
 # Serialization inherited from core
 serde.workspace = true
 bincode.workspace = true
+borsh.workspace = true
 
 # Error handling
 thiserror.workspace = true

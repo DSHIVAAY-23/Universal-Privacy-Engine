@@ -33,3 +33,10 @@ hex = "0.4"
 
 # File I/O
 std-fs = { version = "0.1", package = "fs-err" }
+
+# For generate_inputs binary
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
+rs_merkle = "1.4"
+sha2 = "0.10"
+rand = "0.8"
+borsh = { workspace = true }

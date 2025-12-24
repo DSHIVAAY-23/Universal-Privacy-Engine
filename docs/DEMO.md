@@ -18,94 +18,96 @@ This document provides a step-by-step demonstration of the Universal Privacy Eng
 
 ---
 
-## Step 1: Generate Institutional Test Data
+## Quick Start (3 Commands)
 
 ```bash
-# Run the institutional bank simulator
-cargo run -p test-data-generator --bin generate-test-data
+# Step 1: Build the project
+cargo build --release
+
+# Step 2: Generate institutional credentials (the "fuel")
+cargo run --bin generate_inputs -- --output rwa_creds.bin
+
+# Step 3: Generate ZK proof (future - requires compiled guest ELF)
+# cargo run --bin upe -- prove --input rwa_creds.bin
+```
+
+---
+
+## Step 1: Generate Institutional Credentials
+
+**The Missing Link**: Before you can run the ZK proof engine, you need cryptographically valid input data. This is where the **Institutional Fuel Generator** comes in.
+
+```bash
+cargo run --bin generate_inputs -- --output rwa_creds.bin
 ```
 
 **Output**:
 ```
-🏦 Universal Privacy Engine - Institutional Test Data Generator
+🏦 Universal Privacy Engine - Institutional Credentials Generator
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📝 Step 1: Generating institutional Ed25519 keypair...
-   ✅ Institutional Public Key: b787bd58ac685cb217a83ee06e67fb44aa5dafc5add2bef8b044c1641d6b2540
+🔑 Step 1: Generating institutional Ed25519 keypair...
+   ✅ Institutional Public Key: 9f829ec8ab4b02aaf12a38926a6d0554cb294137c2135d944d00782d7bd423c4
 
-💰 Step 2: Creating 10 dummy user accounts...
-   User 1: $50000.00
-   User 2: $100000.00
-   User 3: $75000.00
-   User 4: $20000.00
-   User 5: $150000.00  ← Test user
-   User 6: $30000.00
-   User 7: $80000.00
-   User 8: $10000.00
-   User 9: $120000.00
-   User 10: $60000.00
-
-🌳 Step 3: Building Merkle tree from user balances...
-   ✅ Merkle Root: 350944952f7e2f3dcd86df3779cade9ec50d71b31591e02b58d51398f30cb738
-
-👤 Step 4: Selecting test user for proof...
-   User ID: 5
-   Balance: $150000.00
-
-🔐 Step 5: Generating Merkle inclusion proof...
-   ✅ Proof length: 4 hashes
-
-✍️  Step 6: Signing user balance with institutional key...
-   ✅ Signature: aba908d07edadb8dff17a25560be31b1e2f9428263c57587eeae569a035d6727...
-
-📋 Step 7: Creating RWA Claim...
-   Balance: $150000.00
-   Threshold: $100000.00
+💰 Step 2: Setting up user credentials...
+   Balance: $1500000.00
+   Threshold: $1000000.00
    Compliance: ✅ PASS
 
-💾 Step 8: Exporting test data to JSON...
-   ✅ Saved to: test_input.json
-   File size: 2674 bytes
+✍️  Step 3: Signing user balance with institutional key...
+   ✅ Signature: 414cb7037d0813b3dea6ff5b3ee9ff9460f40cf0e415e8845756b53de35ea492...
+
+🌳 Step 4: Building institutional Merkle tree (ledger)...
+   Total accounts: 10
+   ✅ Merkle Root: 210777d0b770fc017a7685e9f553550e6f05b249cee35eb9fe81a9f8a08286d3
+
+🔐 Step 5: Generating Merkle inclusion proof...
+   User index: 3
+   ✅ Proof length: 4 hashes
+
+📦 Step 6: Serializing credentials to binary (Borsh)...
+   ✅ Serialized 284 bytes
+   ✅ Saved to: rwa_creds.bin
 ```
 
-**What Happened**:
-- Institutional bank created a Merkle tree of 10 user accounts
-- Selected User 5 with $150,000 balance
-- Signed the balance with Ed25519 private key
-- Generated Merkle inclusion proof
-- Exported everything to `test_input.json`
+**What Just Happened**:
+1. Generated an institutional Ed25519 keypair (simulating a bank)
+2. Created a Merkle tree of 10 user accounts (simulating a ledger)
+3. Selected User #3 with $1.5M balance
+4. Signed the balance with the institutional private key
+5. Generated a Merkle inclusion proof
+6. Serialized everything to **rwa_creds.bin** (284 bytes)
+
+**Custom Parameters**:
+```bash
+# Generate with custom balance and threshold
+cargo run --bin generate_inputs -- \
+  --output custom_creds.bin \
+  --balance 250000000 \
+  --threshold 100000000
+```
 
 ---
 
-## Step 2: Inspect the Test Data
+## Step 2: Inspect the Binary Credentials
 
 ```bash
-cat test_input.json
+# View file size
+ls -lh rwa_creds.bin
+
+# Output: -rw-rw-r-- 1 user user 284 Dec 24 17:20 rwa_creds.bin
 ```
 
-**Sample Output**:
-```json
-{
-  "institutional_pubkey": [183, 135, 189, 88, ...],
-  "balance": 15000000,
-  "threshold": 10000000,
-  "signature": [171, 169, 8, 208, ...],
-  "merkle_root": [53, 9, 68, 149, ...],
-  "merkle_proof": [
-    [array of 32 bytes],
-    [array of 32 bytes],
-    [array of 32 bytes],
-    [array of 32 bytes]
-  ],
-  "leaf_index": 4
-}
-```
+**What's Inside** (Borsh-serialized):
+- Institutional public key (32 bytes)
+- User balance (8 bytes) - **PRIVATE**
+- Compliance threshold (8 bytes) - **PUBLIC**
+- Ed25519 signature (64 bytes) - **PRIVATE**
+- Merkle root (32 bytes) - **PUBLIC**
+- Merkle proof (4 × 32 bytes) - **PRIVATE**
+- Leaf index (8 bytes) - **PRIVATE**
 
-**Key Points**:
-- **Balance**: 15000000 cents = $150,000 (private)
-- **Threshold**: 10000000 cents = $100,000 (public)
-- **Merkle Proof**: 4 sibling hashes for verification
-- **Signature**: Ed25519 signature from institutional authority
+**Total**: 284 bytes of cryptographically valid institutional data
 
 ---
 

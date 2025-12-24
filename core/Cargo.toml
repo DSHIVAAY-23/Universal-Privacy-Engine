@@ -14,3 +14,13 @@ bincode.workspace = true
 
 # Library-grade error handling with custom error types
 thiserror.workspace = true
+
+# Borsh for deterministic serialization (RWA types)
+borsh = { version = "1.5", features = ["derive"] }
+
+# Support for serializing large arrays (>32 bytes) with serde
+serde-big-array = "0.5"
+
+[features]
+default = ["std"]
+std = []

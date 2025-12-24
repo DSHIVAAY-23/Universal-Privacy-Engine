@@ -18,6 +18,12 @@ use thiserror::Error;
 // RWA (Real-World Asset) compliance types
 pub mod rwa;
 
+// Agent infrastructure for automated ZK proof generation
+pub mod agent;
+
+// Logging and audit trails
+pub mod logging;
+
 /// Represents the target blockchain platform for verifier deployment.
 ///
 /// This enum allows the `PrivacyEngine` to generate chain-specific verifier bytecode,

@@ -21,6 +21,15 @@ borsh = { version = "1.5", features = ["derive"] }
 # Support for serializing large arrays (>32 bytes) with serde
 serde-big-array = "0.5"
 
+# Regex for data extraction and sanitization
+regex = "1.10"
+
+# SHA256 hashing for audit trail
+sha2 = "0.10"
+
+# JSON handling
+serde_json = "1.0"
+
 [features]
 default = ["std"]
 std = []

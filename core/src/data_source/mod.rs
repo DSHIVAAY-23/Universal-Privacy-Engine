@@ -52,8 +52,10 @@ mod error;
 mod provider;
 mod http;
 mod builder;
+mod zktls;
 
 pub use error::DataError;
 pub use provider::DataProvider;
 pub use http::HttpProvider;
 pub use builder::ZkInputBuilder;
+pub use zktls::{RecordedTlsProof, ZkTlsError};

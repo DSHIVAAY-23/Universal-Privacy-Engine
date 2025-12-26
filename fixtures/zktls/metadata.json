@@ -1,0 +1,6 @@
+{
+    "domain": "example.com",
+    "timestamp": 1735128000,
+    "response_sha256": "b03114fa12007231aaa7b4de97b3e17ab99e88879d4b286e9dbf153c0937a626",
+    "cert_chain_sha256": "d7135b3dc89583a577f7906d4ff41cb11f24d95e16b7b6bf063b53a615041889"
+}

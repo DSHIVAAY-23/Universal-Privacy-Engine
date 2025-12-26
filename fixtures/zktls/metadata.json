@@ -1,6 +1,8 @@
 {
-    "domain": "example.com",
-    "timestamp": 1735128000,
-    "response_sha256": "b03114fa12007231aaa7b4de97b3e17ab99e88879d4b286e9dbf153c0937a626",
-    "cert_chain_sha256": "d7135b3dc89583a577f7906d4ff41cb11f24d95e16b7b6bf063b53a615041889"
+  "domain": "example.com",
+  "timestamp": 1735128000,
+  "response_hash": "2968e316dc146c84d07c1c57969e6baed0d2f6acf64e1d35df855fa927600a46",
+  "cert_chain_hash": "9b9ebd9620aa12a3390726d52372478c781a1ef8140b8c231e4eceb6c250c14d",
+  "notary_pubkey": "8b5f297b8a3f383c2cdc68d0f10f99aec1bc14484087f9a5483148fec29b9387",
+  "signature": "3321c7c6e7c19887c80fdfc209f24fab6fe7789c192164680384d3068dad4327cd2f3f2c57eda60a3c274cf705be5290576055ce303a8f615c5d6656055d1403"
 }

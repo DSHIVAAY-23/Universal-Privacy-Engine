@@ -209,6 +209,7 @@ impl Sp1Backend {
         .into_bytes();
 
         Ok(ProofReceipt {
+            proof_type: universal_privacy_engine_core::ProofType::ZkProof,
             proof: proof_bytes,
             public_values,
             metadata,
@@ -313,6 +314,7 @@ impl PrivacyEngine for Sp1Backend {
         .into_bytes();
 
         Ok(ProofReceipt {
+            proof_type: universal_privacy_engine_core::ProofType::ZkProof,
             proof: proof_bytes,
             public_values,
             metadata,

@@ -87,7 +87,7 @@ impl RecordedTlsProof {
         Ok(())
     }
 
-    fn verify_signature(&self) -> Result<(), ZkTlsError> {
+    pub fn verify_signature(&self) -> Result<(), ZkTlsError> {
         // Canonical message: "domain:timestamp:response_hash:cert_chain_hash"
         let message = format!(
             "{}:{}:{}:{}",

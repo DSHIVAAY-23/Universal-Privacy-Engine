@@ -25,6 +25,13 @@ This Alpha release is a **client-side research prototype**.
 
 See [TRUST_MODEL.md](TRUST_MODEL.md) for a detailed breakdown.
 
+### 🛤️ Security & Trust Roadmap
+
+- **Phase 1 (Current):** Single Trusted Notary (Hardcoded Key). Suitable for demos and friendly pilots.
+- **Phase 2:** Multi-Notary Quorum. Requires M-of-N signatures to validate a fixture.
+- **Phase 3:** True zkTLS Integration. Replace the "Local Notary" with a decentralized MPC cluster (TLSNotary/DECO) so the Notary never sees plaintext data.
+- **Phase 4:** On-Chain Trust Root. Move the `TRUSTED_NOTARY_PUBKEY` to a smart contract to allow for Key Rotation and Revocation without re-deploying the app.
+
 ---
 
 ## Key Features
@@ -34,7 +41,7 @@ See [TRUST_MODEL.md](TRUST_MODEL.md) for a detailed breakdown.
 - **Swappable Backends**: Currently supports `Sp1Backend` (ZK) and a local Dev/Mock backend.
 - **Extensible**: Designed to support future backends (RISC0, TEEs) without rewriting app logic.
 
-### 📊 **Data Ingestion with "Recorded zkTLS"**
+### 📊 **Data Ingestion with "Signed TLS Fixtures (Pre-zkTLS)"**
 - **HttpProvider**: Fetches data and validates it against cryptographic fixtures.
 - **Fixture System**: proves "This JSON came from `example.com` at time `T`" (using recorded proof).
 - **ZkInputBuilder**: Helper to serialize public and private inputs for the zkVM.

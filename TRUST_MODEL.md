@@ -1,5 +1,13 @@
 # Trust Model
 
+### ⚠️ Alpha Trust Model: "Signed Observation"
+
+**Current Status:** The system currently implements **Signed TLS Observation Proofs (STLOP)**.
+
+- **Notary Visibility:** The Local Notary sees the plaintext data during the capture phase.
+- **Trust Assumption:** The verifier MUST trust that the Notary is honest and has not been compromised.
+- **Differentiation:** This is **NOT** yet a Zero-Knowledge Proof (ZKP) or MPC-based TLSNotary. The "Privacy" aspect relies on the Notary not logging the data, rather than cryptographic guarantees.
+
 ## Overview
 
 This document defines the security assumptions for the **Universal Privacy Engine**.

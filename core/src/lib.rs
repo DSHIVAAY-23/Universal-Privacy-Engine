@@ -24,6 +24,9 @@ pub mod agent;
 // Logging and audit trails
 pub mod logging;
 
+// Data ingestion from external sources
+pub mod data_source;
+
 /// Represents the target blockchain platform for verifier deployment.
 ///
 /// This enum allows the `PrivacyEngine` to generate chain-specific verifier bytecode,
@@ -40,15 +43,38 @@ pub enum ChainType {
     Evm,
 }
 
+/// Distinguishes between different types of cryptographic proofs.
+///
+/// This enum enables the system to handle both zero-knowledge proofs (from ZK-VMs)
+/// and trusted execution environment attestations in a unified interface.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ProofType {
+    /// Zero-knowledge proof from a zkVM (e.g., SP1, RISC0)
+    /// 
+    /// These proofs provide cryptographic guarantees without revealing private inputs.
+    /// Typical size: 300 bytes (Groth16) to 10MB (STARK)
+    ZkProof,
+    
+    /// Attestation from a Trusted Execution Environment (e.g., Intel SGX, AWS Nitro)
+    ///
+    /// These attestations prove that computation occurred within a secure enclave.
+    /// Typical size: 1-5KB (includes signature and enclave measurements)
+    TeeAttestation,
+}
+
 /// A serializable proof receipt containing the ZK proof and associated metadata.
 ///
 /// This structure is designed to be:
 /// - **Portable**: Can be serialized to disk or transmitted over network
 /// - **Self-Contained**: Includes all data needed for verification
 /// - **Extensible**: Metadata field allows for backend-specific information
+/// - **Backend-Agnostic**: Works with both ZK proofs and TEE attestations
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProofReceipt {
-    /// The actual zero-knowledge proof bytes
+    /// The type of proof contained in this receipt
+    pub proof_type: ProofType,
+    
+    /// The actual zero-knowledge proof or attestation bytes
     pub proof: Vec<u8>,
     
     /// Public inputs/outputs that were committed to in the proof
@@ -125,6 +151,7 @@ pub trait PrivacyEngine {
 /// Comprehensive error types for the Privacy Engine.
 ///
 /// Using `thiserror` provides clean error handling with automatic `Display` and `Error` implementations.
+/// This enum covers errors from both ZK-VM backends (SP1, RISC0) and TEE backends (SGX, Nitro).
 #[derive(Debug, Error)]
 pub enum PrivacyEngineError {
     /// Proof generation failed
@@ -149,6 +176,31 @@ pub enum PrivacyEngineError {
     /// Backend-specific error
     #[error("Backend error: {0}")]
     BackendError(String),
+    
+    /// TEE attestation is invalid or cannot be verified
+    ///
+    /// This error occurs when:
+    /// - The attestation signature is invalid
+    /// - The enclave measurement doesn't match expected values
+    /// - The attestation has expired or been revoked
+    #[error("Attestation invalid: {0}")]
+    AttestationInvalid(String),
+    
+    /// TEE enclave operation failed
+    ///
+    /// This error occurs when:
+    /// - Enclave initialization fails
+    /// - Secure computation within the enclave fails
+    /// - Remote attestation protocol fails
+    #[error("Enclave error: {0}")]
+    EnclaveError(String),
+    
+    /// Serialization or deserialization failed
+    ///
+    /// This error occurs when converting between different data formats
+    /// (e.g., Borsh, Bincode, JSON) fails.
+    #[error("Serialization error: {0}")]
+    SerializationError(String),
 }
 
 #[cfg(test)]
@@ -166,6 +218,7 @@ mod tests {
     #[test]
     fn test_proof_receipt_serialization() {
         let receipt = ProofReceipt {
+            proof_type: ProofType::ZkProof,
             proof: vec![1, 2, 3, 4],
             public_values: vec![5, 6, 7, 8],
             metadata: vec![9, 10],
@@ -174,6 +227,7 @@ mod tests {
         let serialized = bincode::serialize(&receipt).unwrap();
         let deserialized: ProofReceipt = bincode::deserialize(&serialized).unwrap();
         
+        assert_eq!(receipt.proof_type, deserialized.proof_type);
         assert_eq!(receipt.proof, deserialized.proof);
         assert_eq!(receipt.public_values, deserialized.public_values);
         assert_eq!(receipt.metadata, deserialized.metadata);

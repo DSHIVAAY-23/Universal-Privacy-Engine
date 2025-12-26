@@ -1,0 +1,35 @@
+[
+  {
+    "scenario": "Small",
+    "prover": "TEE",
+    "mode": "Mock",
+    "time_ms": 200,
+    "cycles": null,
+    "ram_mb": 0,
+    "timestamp": "2025-12-26T09:31:35.868969104+00:00",
+    "input_size_bytes": 256,
+    "output_verified": true
+  },
+  {
+    "scenario": "Medium",
+    "prover": "TEE",
+    "mode": "Mock",
+    "time_ms": 200,
+    "cycles": null,
+    "ram_mb": 0,
+    "timestamp": "2025-12-26T09:31:36.206269419+00:00",
+    "input_size_bytes": 1024,
+    "output_verified": true
+  },
+  {
+    "scenario": "Large",
+    "prover": "TEE",
+    "mode": "Mock",
+    "time_ms": 200,
+    "cycles": null,
+    "ram_mb": 1,
+    "timestamp": "2025-12-26T09:31:36.544460308+00:00",
+    "input_size_bytes": 5120,
+    "output_verified": true
+  }
+]

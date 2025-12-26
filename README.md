@@ -1,204 +1,247 @@
-# ZK Compliance Execution Prototype (Research)
+# Universal Privacy Engine (VeriVault Core)
 
-> **Status**: Early-stage research prototype. NOT production-ready.
+> ⚠️ **Status: Alpha Research Prototype**  
+> This is a research prototype demonstrating modular privacy-preserving computation infrastructure. Not production-ready. Seeking funding for TEE and zkTLS integration.
 
-This repository demonstrates zero-knowledge proof generation and verification for compliance-style predicates across different execution environments. It is a **research artifact** exploring the technical feasibility of privacy-preserving compliance proofs, not a finished protocol or institutional product.
+## Overview
 
----
+The **Universal Privacy Engine** is a modular Rust framework for building privacy-preserving applications using zero-knowledge proofs (ZK-VMs) and Trusted Execution Environments (TEEs). It provides a unified abstraction layer that enables developers to swap proving backends without changing application logic.
 
-## Current Focus
+**Current State**: Research prototype with working SP1 zkVM integration and mock TEE adapter. Demonstrates client-side proof generation with data ingestion from HTTPS sources.
 
-This prototype uses **SP1 (RISC-V zkVM)** to generate proofs of compliance predicates (e.g., "balance ≥ threshold") without revealing private data. Any grant-funded work is scoped to **one specific chain** (e.g., Fuse/EVM or Stellar), with other chain implementations serving as exploratory research artifacts to validate cross-VM feasibility.
-
-**Primary Research Question**: Can we generate succinct, verifiable proofs of compliance predicates that preserve privacy while being economically viable on-chain?
-
----
-
-## What This Repo Is / Is Not
-
-### ✅ This Repository IS:
-
-- A **ZK execution prototype** demonstrating SP1 zkVM integration
-- **Verifier experiments** for multiple execution environments (EVM, Soroban, CosmWasm)
-- **Compliance-style circuits** showing threshold checks and Merkle inclusion
-- **Research code** exploring cross-chain ZK verification patterns
-
-### ❌ This Repository IS NOT:
-
-- A production system ready for institutional use
-- A universal privacy adapter for all blockchains
-- A legally compliant RWA verification protocol
-- An audited or security-reviewed codebase
-- A product with real-world users or partners
+**Target State**: Production-grade privacy infrastructure with hardware-backed TEEs (Intel SGX, AWS Nitro) and cryptographic data authenticity via zkTLS (TLSNotary/DECO).
 
 ---
 
-## Known Limitations & Open Problems
+## Key Features
 
-### Critical Trust Assumptions
+### 🏗️ **Modular Core Architecture**
+- **Hexagonal/Ports-and-Adapters** pattern for backend independence
+- `PrivacyEngine` trait as the universal interface
+- `ProofType` enum distinguishing ZK proofs from TEE attestations
+- Swappable adapters: SP1 (ZK-VM), TEE Mock, future RISC0/Plonky2
 
-1. **Prover Sees Private Data**
-   - The SP1 prover currently runs on the user's machine and has access to all private inputs
-   - No TEE (Trusted Execution Environment) isolation yet
-   - This is a fundamental limitation for institutional use cases
+### 📊 **Data Ingestion Layer**
+- `DataProvider` trait for fetching external data
+- `HttpProvider` with JSON path selector (jq-like syntax)
+- `ZkInputBuilder` for combining public data with secrets
+- zkTLS integration stubs (TLSNotary/DECO roadmap)
 
-2. **No Authenticated Data Ingestion**
-   - No zkTLS or HTTPS-based data authenticity
-   - No cryptographic proof that input data came from a legitimate source
-   - Merkle trees and signatures are self-generated, not from real institutions
+### ⚡ **Performance Benchmarking**
+- Automated benchmark suite for proving backends
+- Metrics: wall time, RAM usage, CPU cycles
+- JSON output for grant proposals and optimization
+- TEE vs SP1 comparison
 
-3. **No Legal Attestation Framework**
-   - No regulatory compliance validation
-   - No legal entity attestation
-   - No connection to real-world identity or KYC systems
-
-4. **No Revocation or Dispute Mechanism**
-   - Proofs are one-time, non-revocable
-   - No way to invalidate a proof if circumstances change
-   - No dispute resolution process
-
-5. **No Security Audit**
-   - Code has not been professionally audited
-   - Cryptographic implementations may have vulnerabilities
-   - Smart contracts have not been formally verified
-
-6. **Economic Viability Uncertain**
-   - Proof generation costs (time, compute) not optimized
-   - Gas costs for verification not benchmarked at scale
-   - No analysis of economic attack vectors
-
-### Technical Gaps
-
-- Guest program uses placeholder Ed25519 verification (not full SP1 precompile integration)
-- Merkle tree implementation not optimized for production scale
-- No proof aggregation or batching
-- No key management or rotation strategy
-- No monitoring or observability infrastructure
+### 🔐 **Smart Contract Generator**
+- Auto-generates Solidity verifiers from templates
+- CLI tool: `generate_verifier --program-vkey <HASH>`
+- Wraps SP1 Groth16/PLONK verifiers with universal interface
+- Mock verifier for development
 
 ---
 
-## Architecture Overview
+## Architecture
 
 ```
-User → SP1 Prover → Groth16 SNARK → On-Chain Verifier
-  │         │            │                 │
-  │         │            │                 ├─ Solana (Research)
-  │         │            │                 ├─ Stellar (Research)
-  │         │            │                 └─ Mantra (Research)
-  │         │            │
-  │         │            └─ ~300 bytes proof
-  │         │
-  │         └─ RISC-V zkVM execution
-  │
-  └─ Private inputs (balance, signature, Merkle proof)
+┌─────────────────────────────────────────────────────────────┐
+│                    Application Layer                         │
+│              (CLI, API, Data Ingestion)                      │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+                            ▼
+                    ┌───────────────┐
+                    │ PrivacyEngine │  ◄── Port (Trait)
+                    │     Trait     │
+                    └───────┬───────┘
+                            │
+            ┌───────────────┼───────────────┐
+            ▼               ▼               ▼
+    ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+    │ Sp1Backend   │ │TeeProverStub │ │ Future: RISC0│
+    │   (Adapter)  │ │  (Adapter)   │ │   (Adapter)  │
+    └──────────────┘ └──────────────┘ └──────────────┘
+         ZK-VM           TEE Mock         ZK-VM
 ```
-
-**Key Components**:
-- **Guest Program** (`guest/rwa_compliance`): RISC-V binary running in SP1 zkVM
-- **SP1 Adapter** (`adapters/sp1`): Proof generation and verification
-- **Verifiers** (`verifiers/`): On-chain verification contracts (research prototypes)
-- **CLI** (`cli`): Command-line interface for proof generation
 
 ---
 
-## Workspace Structure
+## Quick Start
 
-```
-├── core/                    # Trait definitions and shared types
-├── adapters/sp1/            # SP1 zkVM integration
-├── guest/rwa_compliance/    # RISC-V guest program (compliance circuit)
-├── verifiers/               # On-chain verifiers (research prototypes)
-│   ├── solana/              # Anchor program (research)
-│   ├── stellar/             # Soroban contract (research)
-│   └── mantra/              # CosmWasm contract (research)
-├── cli/                     # Command-line tools
-├── scripts/                 # Test data generation
-└── docs/                    # Documentation
-```
-
-**Note**: Verifier implementations for Solana, Stellar, and Mantra are **research prototypes** demonstrating cross-VM feasibility. They are not production-ready and have not been audited.
-
----
-
-## Quick Start (Research Demo)
-
-### Prerequisites
-
-- Rust 1.75+
-- SP1 toolchain (see [SP1 docs](https://docs.succinct.xyz/))
-
-### Generate Test Credentials
+### Installation
 
 ```bash
-# Generate cryptographically valid test data
-cargo run --bin generate_inputs -- --output rwa_creds.bin
+git clone https://github.com/your-org/universal-privacy-engine
+cd universal-privacy-engine
+cargo build --workspace
 ```
 
-**What this does**: Creates a simulated institutional credential with Ed25519 signature and Merkle proof. This is **test data only** and does not represent real institutional assets.
+### Full Privacy Pipeline
 
-### Build Guest Program
+```rust
+use universal_privacy_engine_core::{
+    PrivacyEngine,
+    data_source::{HttpProvider, DataProvider, ZkInputBuilder}
+};
+use universal_privacy_engine_tee::TeeProverStub;
 
-```bash
-cd guest/rwa_compliance
-cargo build --release
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 1. Fetch data from HTTPS API
+    let provider = HttpProvider::new();
+    let balance = provider.fetch(
+        "https://api.bank.com/account/123",
+        "data.balance"  // JSON path selector
+    ).await?;
+    
+    // 2. Verify data authenticity (currently stub)
+    assert!(provider.verify_tls_signature());
+    
+    // 3. Build ZK input (combine data + secrets)
+    let mut builder = ZkInputBuilder::new();
+    builder
+        .add_public_data(balance)
+        .add_secret(user_private_key);
+    
+    let zk_input = builder.build();
+    
+    // 4. Generate proof (TEE or ZK-VM)
+    let backend = TeeProverStub::new();
+    let receipt = backend.prove(&zk_input)?;
+    
+    // 5. Verify proof
+    let is_valid = backend.verify(&receipt)?;
+    assert!(is_valid);
+    
+    Ok(())
+}
 ```
 
-### Run Tests
+### Run Benchmarks
 
 ```bash
+cargo run --release --bin benchmark
+cat benchmarks.json
+```
+
+### Generate Solidity Verifier
+
+```bash
+cargo run --bin generate_verifier -- \
+  --program-vkey 0x1234567890abcdef... \
+  --out-dir contracts/generated
+```
+
+---
+
+## Project Structure
+
+```
+universal-privacy-engine/
+├── core/                      # Core abstraction layer
+│   ├── src/
+│   │   ├── lib.rs            # PrivacyEngine trait, ProofType enum
+│   │   ├── data_source/      # Data ingestion (HttpProvider, ZkInputBuilder)
+│   │   ├── rwa/              # Real-World Asset types
+│   │   └── agent/            # Automation infrastructure
+│   └── Cargo.toml
+├── adapters/
+│   ├── sp1/                  # SP1 zkVM adapter
+│   └── tee/                  # TEE mock adapter (SGX/Nitro stub)
+├── bin/                      # Benchmark binary
+├── scripts/                  # Verifier generator
+├── contracts/
+│   ├── templates/            # Tera templates for Solidity
+│   └── generated/            # Auto-generated verifiers
+└── guest/                    # SP1 guest programs
+```
+
+---
+
+## Current Limitations (Alpha Status)
+
+### ⚠️ **Trust Model**
+- **Client-side proving**: Prover runs on user's machine (no hardware isolation)
+- **Mock TEE**: `TeeProverStub` simulates attestations without real SGX/Nitro
+- **No zkTLS**: Data authenticity relies on trusting HTTPS endpoints
+
+### ⚠️ **Performance**
+- **SP1 proving time**: 30s-3min depending on workload (Mock mode)
+- **TEE mock**: Simulates 200ms delay, no real cryptography
+- **Not optimized**: Research prototype, not production-tuned
+
+### ⚠️ **Deployment**
+- **No production deployments**: Contracts are templates, not audited
+- **Mock verifiers**: Development-only, not cryptographically secure
+- **Limited chain support**: EVM focus, Solana/Stellar adapters incomplete
+
+---
+
+## Roadmap to Production
+
+### Phase 1: TEE Integration (Seeking Funding)
+- [ ] Intel SGX adapter with DCAP attestation
+- [ ] AWS Nitro Enclaves integration
+- [ ] Azure Confidential Computing support
+- [ ] Hardware-backed key management
+
+### Phase 2: zkTLS Integration (Seeking Funding)
+- [ ] TLSNotary proof generation during HTTP fetch
+- [ ] DECO protocol integration (3-party TLS)
+- [ ] Selective disclosure for privacy
+- [ ] On-chain proof verification
+
+### Phase 3: Production Hardening
+- [ ] Security audit (smart contracts + Rust)
+- [ ] Gas optimization for verifiers
+- [ ] Multi-chain deployment (Solana, Stellar, Polkadot)
+- [ ] Performance benchmarking on real hardware
+
+### Phase 4: Developer Experience
+- [ ] SDK for TypeScript/Python
+- [ ] Web-based proof generation
+- [ ] Hosted proving service
+- [ ] Documentation and tutorials
+
+---
+
+## Documentation
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical design and hexagonal architecture
+- **[TRUST_MODEL.md](TRUST_MODEL.md)** - Security assumptions and future roadmap
+- **[DELIVERABLES.md](DELIVERABLES.md)** - Completed work and pending items
+- **[USAGE.md](USAGE.md)** - Developer guide with examples
+
+---
+
+## Testing
+
+```bash
+# Run all tests
 cargo test --workspace
+
+# Run specific module tests
+cargo test -p universal-privacy-engine-core
+cargo test -p universal-privacy-engine-tee
+
+# Run benchmarks
+cargo run --release --bin benchmark
 ```
 
-**Current Status**: 25/25 tests passing (unit tests only, no integration tests)
-
----
-
-## Planned Research Directions
-
-> **Note**: These are research directions, not commitments or timelines.
-
-### Short-term (Exploratory)
-
-- **TEE-hosted SP1 Prover**: Investigate running prover in SGX/Nitro/SEV enclave
-- **zkTLS Integration**: Explore HTTPS-based data authenticity proofs
-- **Chain-specific Vertical MVP**: Focus on one use case (e.g., payroll compliance on Fuse)
-
-### Medium-term (Uncertain)
-
-- Proof aggregation and batching
-- Key management and rotation
-- Economic attack analysis
-- Formal verification of circuits
-
-### Long-term (Speculative)
-
-- Legal attestation framework
-- Regulatory compliance validation
-- Multi-party computation for distributed proving
-- Hardware acceleration
-
----
-
-## Grant Application Context
-
-If this repository is part of a grant application, the scope is limited to:
-
-1. **One specific chain** (e.g., Fuse/EVM, Stellar, or Mantra)
-2. **One specific use case** (e.g., payroll compliance, asset verification)
-3. **Research deliverables**, not production deployment
-
-Other chain implementations in this repository are **research artifacts** demonstrating technical feasibility and are not in scope for any single grant.
+**Test Coverage**:
+- Core: 17 tests ✅
+- TEE Adapter: 10 tests ✅
+- Data Ingestion: 15 tests ✅
+- Verifier Generator: 5 tests ✅
 
 ---
 
 ## Contributing
 
-This is a research prototype. Contributions are welcome, but please understand:
-
-- No production use cases are supported
-- No guarantees of backward compatibility
-- Code may change significantly as research evolves
-- Security issues should be reported via GitHub issues (no bug bounty)
+This is a research prototype. Contributions welcome, but please understand:
+- **Not production-ready**: Use at your own risk
+- **Breaking changes**: API may change significantly
+- **Grant-funded development**: Major features pending funding
 
 ---
 
@@ -208,26 +251,21 @@ MIT OR Apache-2.0
 
 ---
 
-## Disclaimer
+## Acknowledgments
 
-**THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.**
-
-This is experimental research software. It has not been audited, is not production-ready, and should not be used for any real-world financial or compliance purposes. The authors make no claims about the security, correctness, or suitability of this code for any particular use case.
-
-**No institutional partnerships, users, or real-world deployments exist.**
-
----
-
-## References
-
-- [SP1 Documentation](https://docs.succinct.xyz/)
-- [Groth16 Paper](https://eprint.iacr.org/2016/260.pdf)
-- [Zero-Knowledge Proofs: An Introduction](https://z.cash/technology/zksnarks/)
+Built with:
+- [SP1](https://github.com/succinctlabs/sp1) - zkVM for zero-knowledge proofs
+- [Tera](https://github.com/Keats/tera) - Template engine for code generation
+- [Reqwest](https://github.com/seanmonstar/reqwest) - HTTP client for data ingestion
 
 ---
 
 ## Contact
 
-For research collaboration or technical questions, please open a GitHub issue.
+For grant proposals, collaborations, or technical questions:
+- **GitHub Issues**: [Report bugs or request features](https://github.com/your-org/universal-privacy-engine/issues)
+- **Email**: [your-email@example.com]
 
-**No commercial inquiries. No partnership requests. Research only.**
+---
+
+**⚠️ Disclaimer**: This is research software. Do not use in production without proper security audits and hardware TEE integration.

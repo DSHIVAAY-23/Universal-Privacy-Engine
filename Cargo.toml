@@ -2,9 +2,11 @@
 members = [
     "core",
     "adapters/sp1",
+    "adapters/tee",
     "cli",
     "guest/rwa_compliance",
     "scripts",
+    "bin",
 ]
 
 # Enforce consistent Rust edition across all workspace members
@@ -30,3 +32,24 @@ borsh = { version = "1.5", features = ["derive"] }
 # SP1 SDK - The primary ZK proving backend
 # Note: Version may need adjustment based on latest SP1 releases
 sp1-sdk = "3.0.0"
+
+# Ed25519 signatures for TEE mock attestations
+ed25519-dalek = "2.0"
+
+# System metrics for benchmarking
+sysinfo = "0.30"
+
+# Time utilities for benchmarking
+chrono = "0.4"
+
+# HTTP client for data fetching
+reqwest = { version = "0.11", features = ["json"] }
+
+# Async trait support
+async-trait = "0.1"
+
+# Sensitive data handling
+secrecy = "0.8"
+
+# Template engine for code generation
+tera = "1.19"

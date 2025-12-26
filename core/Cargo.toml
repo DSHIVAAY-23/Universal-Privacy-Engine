@@ -45,3 +45,10 @@ secrecy.workspace = true
 [features]
 default = ["std"]
 std = []
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "proof_bench"
+harness = false

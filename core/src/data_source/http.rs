@@ -156,28 +156,11 @@ impl DataProvider for HttpProvider {
             let response_bytes = read_file(&response_path)?;
 
             // 2. Parse metadata into Proof struct
-            let metadata: Value = serde_json::from_slice(&metadata_bytes)
+            let proof: RecordedTlsProof = serde_json::from_slice(&metadata_bytes)
                 .map_err(|e| DataError::JsonError(format!("Invalid metadata JSON: {}", e)))?;
-            
-            let proof = RecordedTlsProof {
-                domain: metadata["domain"].as_str().unwrap_or("").to_string(),
-                timestamp: metadata["timestamp"].as_u64().unwrap_or(0),
-                response_hash: metadata["response_sha256"].as_str().unwrap_or("").to_string(),
-                cert_chain_hash: metadata["cert_chain_sha256"].as_str().unwrap_or("").to_string(),
-            };
 
             // 3. Verify the Proof
-            // In a real flow, 'verify_tls_proof' would be called with the proof provided by the Prover.
-            // Here, we verify the fixtures against themselves to demonstrate the logic.
-            self.verify_tls_proof(&proof).map_err(|e| match e {
-                ZkTlsError::DomainMismatch { .. } => DataError::HttpError(e.to_string()),
-                ZkTlsError::CertChainMismatch => DataError::HttpError(e.to_string()),
-                ZkTlsError::ResponseTampered => DataError::HttpError(e.to_string()),
-                ZkTlsError::ReplayDetected { .. } => DataError::HttpError(e.to_string()),
-            })?;
-
-             // 4. Validate Specifics (Double-check against raw bytes we loaded)
-            // This ensures the loaded 'response_bytes' match the verified 'proof.response_hash'.
+            // In the robust flow, we call verification with the loaded bytes.
             proof.verify(
                 "example.com", 
                 &cert_bytes, 
@@ -186,7 +169,7 @@ impl DataProvider for HttpProvider {
                 3600 // 1 hour max age
             ).map_err(|e| DataError::HttpError(format!("Proof verification failed: {}", e)))?;
 
-            // 5. Return verified data
+             // 4. Return verified data
             let json: Value = serde_json::from_slice(&response_bytes)
                 .map_err(|e| DataError::JsonError(format!("Failed to parse response JSON: {}", e)))?;
             

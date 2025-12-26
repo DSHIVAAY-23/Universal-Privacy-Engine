@@ -17,9 +17,9 @@ impl DataProvider for MockProvider {
         Ok(serde_json::to_vec(&response_value).unwrap())
     }
     
-    fn verify_tls_signature(&self) -> bool { 
+    fn verify_tls_proof(&self, _proof: &universal_privacy_engine_core::data_source::RecordedTlsProof) -> Result<(), universal_privacy_engine_core::data_source::ZkTlsError> { 
         // Mocking zkTLS verification passing
-        true 
+        Ok(()) 
     }
 }
 

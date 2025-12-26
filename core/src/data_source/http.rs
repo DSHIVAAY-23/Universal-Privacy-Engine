@@ -6,6 +6,10 @@ use serde_json::Value;
 use super::error::DataError;
 use super::provider::DataProvider;
 
+// TRUST ANCHOR: The Public Key of our Trusted Local Notary (from capture_zktls)
+// This strictly enforces that only proofs signed by this specific key are accepted.
+const TRUSTED_NOTARY_PUBKEY: &str = "8b5f297b8a3f383c2cdc68d0f10f99aec1bc14484087f9a5483148fec29b9387";
+
 /// HTTP-based data provider using reqwest
 ///
 /// Fetches JSON data from HTTPS endpoints and extracts specific fields
@@ -196,15 +200,29 @@ impl DataProvider for HttpProvider {
         self.select_json_field(&json, query)
     }
     
-    fn verify_tls_proof(&self, _proof: &super::zktls::RecordedTlsProof) -> Result<(), super::zktls::ZkTlsError> {
-        // In the full zkTLS flow, this method would verify the cryptographic signature 
-        // from the Notary. For 'Recorded zkTLS', the verification happens via 
-        // RecordedTlsProof::verify() which checks the hashes against the raw data.
-        //
-        // Since `HttpProvider` doesn't hold the raw data statefully (it fetches it),
-        // the effective verification logic is encoded in the `fetch` method above for the demo.
-        // 
-        // However, to satisfy the interface, we return Ok here implies the *structure* is valid.
+    fn verify_tls_proof(&self, proof: &super::zktls::RecordedTlsProof) -> Result<(), super::zktls::ZkTlsError> {
+        // 1. TRUST ANCHOR CHECK (Prevent Malicious Notary Attack)
+        if proof.notary_pubkey != TRUSTED_NOTARY_PUBKEY {
+            eprintln!("🚨 SECURITY ALERT: Proof signed by Untrusted Notary!");
+            eprintln!("Expected: {}", TRUSTED_NOTARY_PUBKEY);
+            eprintln!("Got:      {}", proof.notary_pubkey);
+            // We reuse SignatureInvalid for this meaningful security failure
+            return Err(super::zktls::ZkTlsError::SignatureInvalid("Untrusted Notary Public Key".into()));
+        }
+
+        // 2. CRYPTOGRAPHIC VERIFICATION is handled by the caller (proof.verify) in our current structure.
+        // But strictly, we should ensure it happens. In 'fetch', we call proof.verify() immediately after this.
+        // For consistency with the trait, we could call proof.verify_signature() here too if we had the raw data?
+        // 'RecordedTlsProof' struct stores hashes, not raw data. 'verify_signature' checks the signature over values in the struct.
+        // So checking signature here is possible and good practice!
+        
+        // This ensures the metadata itself is authentically signed by the Trusted Notary.
+        if let Err(e) = proof.verify_signature() {
+             eprintln!("❌ zkTLS: Verification Failed: {:?}", e);
+             return Err(e);
+        }
+
+        println!("✅ zkTLS: Signature Verified & Trusted.");
         Ok(())
     }
 }

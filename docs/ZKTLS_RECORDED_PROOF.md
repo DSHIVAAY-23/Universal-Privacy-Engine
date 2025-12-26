@@ -1,6 +1,6 @@
-# Recorded zkTLS Proof System
+# Signed TLS Fixtures (Pre-zkTLS) System
 
-This document explains the "Recorded zkTLS" verification layer used in the current alpha version.
+This document explains the "Signed TLS Fixtures" verification layer used in the current alpha version.
 
 ## Overview
 The `RecordedTlsProof` system replaces "blind trust" with a deterministic fixture-based verification flow.

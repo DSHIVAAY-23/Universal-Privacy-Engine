@@ -14,7 +14,7 @@ The current codebase is a **Research Prototype** dealing with:
 
 ## 1. zkTLS (High Priority)
 
-The current "Recorded zkTLS" system is a fixture-based verification layer used to demonstrate the *flow* of data authenticity without the heavy cryptographic overhead of full zkTLS generation during development.
+The current "Signed TLS Fixtures (Pre-zkTLS)" system is a fixture-based verification layer used to demonstrate the *flow* of data authenticity without the heavy cryptographic overhead of full zkTLS generation during development.
 
 ### Implementation Goals
 - **TLSNotary Integration**: Replace recorded fixtures with live, 3-party TLS connection proofs (Prover, Notary, Verifier).

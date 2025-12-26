@@ -38,7 +38,7 @@ This document tracks the completed work and pending items for the Universal Priv
   - RWA compliance use case
   - Verifier export for EVM chains
 
-- [x] **TEE Mock Adapter (`adapters/tee`)**
+- [x] **Dev/Mock Adapter (`adapters/tee`)**
   - `TeeProverStub` with Ed25519 signatures
   - `MockAttestation` struct
   - 200ms computation simulation
@@ -105,7 +105,7 @@ This document tracks the completed work and pending items for the Universal Priv
 
 - [x] **Test Coverage**
   - Core: 17 tests ✅
-  - TEE Adapter: 10 tests ✅
+  - Mock Adapter: 10 tests ✅
   - Data Ingestion: 15 tests ✅
   - Verifier Generator: 5 tests ✅
   - **Total: 47 tests, 100% pass rate**

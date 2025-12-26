@@ -150,109 +150,24 @@ impl DataProvider for HttpProvider {
     
     fn verify_tls_signature(&self) -> bool {
         // ═══════════════════════════════════════════════════════════════════════════
-        // TODO: zkTLS / TLSNotary Integration
+        // TODO(zkTLS): Implement TLS session verification
         // ═══════════════════════════════════════════════════════════════════════════
         //
-        // This method is a PLACEHOLDER for future zkTLS integration.
+        // Missing Cryptography:
+        // - TLS session proof verification (Server Identity + Data Authenticity)
+        // - Authenticated Dictionary verification (for selective disclosure)
         //
-        // ## Integration Plan:
+        // Intended Protocol/Library:
+        // - Primary: TLSNotary (https://tlsnotary.org) for off-chain verification
+        // - Alternative: DECO (https://www.deco.works) for 3-party MPC
         //
-        // ### Option 1: TLSNotary (Recommended)
+        // Verification Scope:
+        // - Phase 1: Off-chain verification in this method (HttpProvider as verifier)
+        // - Phase 2: On-chain verification via SP1/Groth16 wrapper
         //
-        // TLSNotary allows proving that specific data came from a TLS session without
-        // revealing the entire session contents.
-        //
-        // **Implementation Steps**:
-        // 1. **Capture TLS Session**:
-        //    - Use `tlsn` crate (https://github.com/tlsnotary/tlsn)
-        //    - Intercept TLS handshake during HTTP request
-        //    - Record session keys and encrypted traffic
-        //
-        // 2. **Generate Proof**:
-        //    - Create commitment to HTTP response
-        //    - Generate zero-knowledge proof of commitment
-        //    - Include notary signature
-        //
-        // 3. **Verify Proof**:
-        //    - Check notary signature validity
-        //    - Verify proof against committed data
-        //    - Validate timestamp freshness (prevent replay)
-        //    - Confirm certificate chain
-        //
-        // **Code Example**:
-        // ```rust
-        // use tlsn::{Prover, Verifier};
-        //
-        // // During fetch():
-        // let (proof, session_data) = prover.prove_tls_session(url).await?;
-        // self.tls_proof = Some(proof);
-        //
-        // // In verify_tls_signature():
-        // let proof = self.tls_proof.as_ref()
-        //     .ok_or(DataError::TlsVerificationFailed("No proof available"))?;
-        //
-        // let verifier = Verifier::new(notary_public_key);
-        // verifier.verify(proof)?;
-        //
-        // // Check timestamp
-        // if proof.timestamp < now() - MAX_AGE {
-        //     return Err(DataError::TlsVerificationFailed("Proof too old"));
-        // }
-        //
-        // Ok(true)
-        // ```
-        //
-        // ### Option 2: DECO Protocol
-        //
-        // DECO uses 3-party computation (Prover, Verifier, TLS Server) to prove
-        // TLS session data without a trusted notary.
-        //
-        // **Implementation Steps**:
-        // 1. Split TLS session keys between Prover and Verifier
-        // 2. Execute TLS handshake with MPC
-        // 3. Generate ZK proof of HTTP response
-        // 4. Verify proof without notary
-        //
-        // ### Option 3: zkTLS (General)
-        //
-        // Use any zkTLS library that provides:
-        // - TLS session proof generation
-        // - Selective disclosure (prove specific fields)
-        // - Verifiable timestamps
-        //
-        // ## Security Considerations:
-        //
-        // 1. **Notary Trust**: TLSNotary requires trusting the notary
-        //    - Use multiple notaries for redundancy
-        //    - Verify notary public key against known list
-        //
-        // 2. **Timestamp Validation**: Prevent replay attacks
-        //    - Proof must be recent (e.g., < 5 minutes old)
-        //    - Include nonce in proof
-        //
-        // 3. **Certificate Validation**: Ensure TLS certificate is valid
-        //    - Check certificate chain
-        //    - Verify not revoked
-        //    - Confirm domain matches
-        //
-        // 4. **Data Integrity**: Proof must cover entire HTTP response
-        //    - Include headers and body
-        //    - Verify content-type
-        //    - Check content-length
-        //
-        // ## Migration Path:
-        //
-        // 1. **Phase 1** (Current): No verification, return `true`
-        // 2. **Phase 2**: Add TLSNotary proof generation during fetch()
-        // 3. **Phase 3**: Implement proof verification in this method
-        // 4. **Phase 4**: Integrate with Privacy Engine for on-chain verification
-        //
-        // ## References:
-        //
-        // - TLSNotary: https://tlsnotary.org/
-        // - DECO: https://www.deco.works/
-        // - zkTLS Overview: https://blog.chain.link/zktls/
-        //
+        // Current Status:
+        // - INSECURE: Returns true without verification
+        // - Pending external `tlsn` crate integration
         // ═══════════════════════════════════════════════════════════════════════════
         
         true // INSECURE: Always returns true for now

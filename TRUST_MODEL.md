@@ -2,311 +2,63 @@
 
 ## Overview
 
-This document explains the security assumptions, trust requirements, and roadmap for the Universal Privacy Engine. It provides an honest assessment of the current state (Alpha) and the target production architecture.
+This document defines the security assumptions for the **Universal Privacy Engine**.
+It explicitly separates the **Current State (Alpha)** from the **Target State (Future Work)** to avoid ambiguity during review.
 
 ---
 
-## Current State (Alpha Research Prototype)
+## 1. Current Trust Model (Implemented)
 
-### ⚠️ Trust Assumptions
+The Alpha version enables developers to build and test the *architecture* of privacy-preserving applications.
+It does **NOT** yet provide full cryptographic confidentiality or hardware-backed integrity.
 
-#### 1. **Client-Side Proving**
+### ✅ What is Secured
+- **Execution Integrity**: The SP1 zkVM cryptographically proves that the Rust guest code was executed correctly on the provided inputs.
+- **Data Integrity (Static)**: The "Recorded zkTLS" system proves that input data matches a specific, pre-recorded SHA256 hash of a TLS session.
+- **Deterministic Verification**: All verification logic (proof check, fixture check) is deterministic and reproducible.
 
-**Current Implementation**:
-- Prover runs on the user's local machine
-- No hardware isolation or secure enclaves
-- Operator/developer can access raw input data
+### ⚠️ Trust Assumptions (Current)
+1.  **Prover Visibility**: The entity running the prover (the User or Developer) has full view of the private inputs. There is no TEE isolation in the Alpha.
+2.  **HTTPS Endpoint Trust**: We assume the data source (e.g., specific API domain) provides correct data.
+3.  **Fixture Trust**: In "Recorded" mode, the verifier trusts that the fixture metadata corresponds to a valid historical event.
 
-**Security Implications**:
-- ❌ **No privacy from operator**: If the prover is compromised, all data is visible
-- ❌ **No tamper resistance**: Malicious operator can modify prover code
-- ❌ **Trust required**: Users must trust the software and execution environment
-
-**Use Cases**:
-- ✅ Development and testing
-- ✅ Proof-of-concept demonstrations
-- ✅ Research prototypes
-- ❌ Production deployments with sensitive data
-
-#### 2. **Mock TEE Adapter**
-
-**Current Implementation**:
-- `TeeProverStub` simulates TEE attestations
-- Uses Ed25519 signatures (not hardware-backed)
-- No real Intel SGX or AWS Nitro integration
-
-**Security Implications**:
-- ❌ **No hardware security**: Attestations are software-generated
-- ❌ **No remote attestation**: Cannot prove execution environment
-- ❌ **Mock only**: Suitable for development, not production
-
-**Code Warning**:
-```rust
-/// @dev ⚠️ WARNING: This is a MOCK verifier for development only!
-/// @dev DO NOT deploy to production. Use real SP1 verifier instead.
-/// @dev Mock verifier does not perform actual cryptographic verification.
-```
-
-#### 3. **No zkTLS Integration**
-
-**Current Implementation**:
-- `HttpProvider` fetches data over HTTPS
-- `verify_tls_signature()` always returns `true`
-- No cryptographic proof of data authenticity
-
-**Security Implications**:
-- ❌ **Trust HTTPS endpoints**: Must trust API servers not to lie
-- ❌ **No proof of data source**: Cannot prove data came from specific server
-- ❌ **Vulnerable to MITM**: If TLS is compromised, data can be tampered
-
-**Trust Requirement**:
-- Users must trust:
-  1. The HTTPS endpoint (e.g., bank API)
-  2. The TLS certificate authority
-  3. The network path (no MITM attacks)
+### ❌ What This Does NOT Guarantee
+- **Confidential Computing**: The operator of the node *can* see the data.
+- **Live TLS Proofs**: The system currently verifies *recorded* evidence, not live TLS handshakes.
+- **Hardware Security**: No dependence on Intel SGX/AWS Nitro in the current version.
 
 ---
 
-## Target State (Production Architecture)
+## 2. Target Trust Model (Future Work)
 
-### ✅ Hardware-Backed TEE Integration
+The roadmap aims to reduce trust assumptions by integrating cryptographic multi-party computation and hardware isolation.
 
-**Goal**: Run the prover inside a Trusted Execution Environment
+### Planned Improvements
+1.  **zkTLS (TLSNotary / DECO)**:
+    - **Goal**: Verify data authenticity without trusting the TLS provider fully.
+    - **Mechanism**: Use 3-party MPC (User, Server, Notary) to prove data origin.
+    - **Benefit**: "Don't Verify, Verify".
 
-**Supported TEEs**:
-1. **Intel SGX** (Software Guard Extensions)
-2. **AWS Nitro Enclaves**
-3. **Azure Confidential Computing**
-
-**Security Guarantees**:
-- ✅ **Hardware isolation**: Prover runs in encrypted memory
-- ✅ **Remote attestation**: Users can verify execution environment
-- ✅ **Tamper resistance**: Operator cannot access raw data
-- ✅ **Sealed storage**: Secrets protected by hardware keys
-
-**Trust Model**:
-```
-User trusts:
-  1. Hardware vendor (Intel, AMD, AWS)
-  2. TEE firmware (verified via attestation)
-  3. Prover code (open-source, audited)
-
-User does NOT trust:
-  ❌ Cloud provider (AWS, Azure, GCP)
-  ❌ Operator/developer
-  ❌ Operating system
-```
-
-**Attestation Flow**:
-```
-1. User requests proof
-2. TEE generates attestation (DCAP quote)
-3. User verifies attestation:
-   - Check enclave measurement (hash of prover code)
-   - Verify signature from hardware
-   - Confirm timestamp freshness
-4. If valid, user trusts the proof
-```
-
-### ✅ zkTLS Integration
-
-**Goal**: Cryptographically prove data came from specific HTTPS endpoint
-
-**Supported Protocols**:
-1. **TLSNotary** (3-party TLS with notary)
-2. **DECO** (2-party TLS with MPC)
-
-**Security Guarantees**:
-- ✅ **Data authenticity**: Cryptographic proof of TLS session
-- ✅ **Selective disclosure**: Prove specific fields without revealing full response
-- ✅ **Verifiable timestamps**: Prevent replay attacks
-- ✅ **No trust in endpoint**: Even if API lies, proof will fail
-
-**Trust Model**:
-```
-User trusts:
-  1. TLS certificate authority (standard web PKI)
-  2. Notary (for TLSNotary) or MPC protocol (for DECO)
-  3. Cryptographic primitives (TLS 1.3, signatures)
-
-User does NOT trust:
-  ❌ API endpoint (can lie, but proof will fail)
-  ❌ Network path (MITM attacks detectable)
-```
-
-**zkTLS Flow**:
-```
-1. Prover initiates TLS session with API
-2. Notary participates in handshake (TLSNotary)
-   OR MPC splits session keys (DECO)
-3. Prover receives HTTP response
-4. Prover generates ZK proof of response content
-5. Notary signs commitment (TLSNotary only)
-6. User verifies:
-   - Notary signature
-   - TLS certificate chain
-   - Timestamp freshness
-   - ZK proof validity
-```
+2.  **Optional TEE Isolation**:
+    - **Goal**: Hide private inputs from the node operator.
+    - **Mechanism**: Run the `PrivacyEngine` inside an enclave (SGX/Nitro).
+    - **Benefit**: Defense-in-depth for key management.
 
 ---
 
-## Comparison: Current vs. Target
+## 3. Threat Model (Alpha)
 
-| Aspect | Current (Alpha) | Target (Production) |
-|--------|-----------------|---------------------|
-| **Prover Isolation** | None (client-side) | Hardware TEE (SGX/Nitro) |
-| **Data Privacy** | ❌ Visible to operator | ✅ Encrypted in enclave |
-| **Attestation** | ❌ Mock (Ed25519) | ✅ Hardware-backed (DCAP) |
-| **Data Authenticity** | ❌ Trust HTTPS | ✅ zkTLS proof |
-| **Tamper Resistance** | ❌ Software only | ✅ Hardware-enforced |
-| **Remote Verification** | ❌ Not possible | ✅ Attestation verification |
-| **Trust Requirement** | High (trust operator) | Low (trust hardware vendor) |
-
----
-
-## Security Roadmap
-
-### Phase 1: TEE Integration (6-9 months)
-
-**Deliverables**:
-- [ ] Intel SGX adapter with DCAP attestation
-- [ ] AWS Nitro Enclaves integration
-- [ ] Azure Confidential Computing support
-- [ ] Remote attestation verification library
-- [ ] Sealed storage for secrets
-
-**Security Improvements**:
-- ✅ Hardware isolation for prover
-- ✅ Remote attestation
-- ✅ Encrypted memory
-- ⚠️ Still trusts HTTPS endpoints (no zkTLS yet)
-
-### Phase 2: zkTLS Integration (9-12 months)
-
-**Deliverables**:
-- [ ] TLSNotary proof generation during HTTP fetch
-- [ ] DECO protocol integration
-- [ ] Selective disclosure for privacy
-- [ ] On-chain proof verification
-- [ ] Notary infrastructure
-
-**Security Improvements**:
-- ✅ Cryptographic data authenticity
-- ✅ No trust in API endpoints
-- ✅ Verifiable timestamps
-- ✅ Selective disclosure
-
-### Phase 3: Production Hardening (12-18 months)
-
-**Deliverables**:
-- [ ] Security audit (smart contracts + Rust)
-- [ ] Formal verification of critical paths
-- [ ] Bug bounty program
-- [ ] Incident response plan
-- [ ] Key management infrastructure
-
-**Security Improvements**:
-- ✅ Audited codebase
-- ✅ Formally verified components
-- ✅ Battle-tested in production
-
----
-
-## Threat Model
-
-### Threats Mitigated (Target State)
-
-1. **Malicious Operator**:
-   - ✅ Cannot access raw data (TEE isolation)
-   - ✅ Cannot tamper with prover (attestation)
-   - ✅ Cannot forge proofs (hardware keys)
-
-2. **Compromised API**:
-   - ✅ Cannot provide fake data (zkTLS proof)
-   - ✅ Cannot replay old data (timestamp verification)
-
-3. **Man-in-the-Middle**:
-   - ✅ Cannot tamper with TLS session (zkTLS)
-   - ✅ Cannot inject fake data (cryptographic proof)
-
-### Threats NOT Mitigated
-
-1. **Hardware Vendor Compromise**:
-   - ❌ If Intel/AMD/AWS is malicious, TEE security fails
-   - Mitigation: Use multiple TEE vendors, compare attestations
-
-2. **Side-Channel Attacks**:
-   - ❌ Spectre, Meltdown, cache timing attacks
-   - Mitigation: Use latest CPU microcode, constant-time crypto
-
-3. **Denial of Service**:
-   - ❌ Operator can refuse to generate proofs
-   - Mitigation: Decentralized prover network
-
-4. **Social Engineering**:
-   - ❌ User tricked into trusting wrong attestation
-   - Mitigation: User education, wallet integration
-
----
-
-## Recommendations for Current Use
-
-### ✅ Acceptable Use Cases (Alpha)
-
-1. **Development and Testing**:
-   - Building applications
-   - Testing proof generation
-   - Benchmarking performance
-
-2. **Proof-of-Concept Demonstrations**:
-   - Grant proposals
-   - Technical demos
-   - Research papers
-
-3. **Non-Sensitive Data**:
-   - Public data verification
-   - Educational examples
-   - Testnet deployments
-
-### ❌ Unacceptable Use Cases (Alpha)
-
-1. **Production Deployments**:
-   - Real user data
-   - Financial applications
-   - Healthcare records
-
-2. **Sensitive Data**:
-   - Private keys
-   - Passwords
-   - Personal information
-
-3. **High-Value Assets**:
-   - Cryptocurrency custody
-   - Financial instruments
-   - Legal documents
+| Threat | Mitigated? | Explanation |
+|--------|------------|-------------|
+| **Malicious Modification of Logic** | ✅ Yes | SP1 Proof ensures code integrity. |
+| **Tampered Input Data** | ✅ Yes | Recorded zkTLS verifies SHA256 hash of inputs. |
+| **Malicious Node Operator** | ❌ No | Operator can see plaintext inputs (Alpha limitation). |
+| **MITM on Data Fetch** | ❌ No | Relies on standard HTTPS trust currently. |
 
 ---
 
 ## Disclaimer
 
-**⚠️ ALPHA SOFTWARE WARNING**
-
-This is research software. The current trust model is **NOT suitable for production use**. Do not process sensitive data or deploy to mainnet without:
-
-1. ✅ Real TEE integration (SGX/Nitro)
-2. ✅ zkTLS data authenticity
-3. ✅ Security audit
-4. ✅ Formal verification
-5. ✅ Bug bounty program
-
-**Use at your own risk.**
-
----
-
-## References
-
-- **Intel SGX**: [SGX Developer Guide](https://www.intel.com/content/www/us/en/developer/tools/software-guard-extensions/overview.html)
-- **AWS Nitro**: [Nitro Enclaves Documentation](https://docs.aws.amazon.com/enclaves/latest/user/nitro-enclave.html)
-- **TLSNotary**: [TLSNotary Protocol](https://tlsnotary.org/)
-- **DECO**: [DECO Whitepaper](https://arxiv.org/abs/1909.00938)
+This software is a **Research Prototype**.
+Do not use for production keys or high-value assets.
+The "Privacy" in the name refers to the *capability* of the architecture to handle private inputs in future versions, not a guarantee of confidentiality in the current v0.1 release.

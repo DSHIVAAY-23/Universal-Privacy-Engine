@@ -27,7 +27,7 @@ cargo test --workspace
 ### Basic Usage
 
 ```bash
-# Run all benchmarks (TEE backend)
+# Run all benchmarks (Mock backend)
 cargo run --release --bin benchmark
 
 # View results
@@ -260,7 +260,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Using Different Backends
 
-### TEE Backend (Mock)
+### Mock Backend (Development)
 
 ```rust
 use universal_privacy_engine_core::PrivacyEngine;
@@ -350,7 +350,7 @@ cargo test --workspace
 # Core module
 cargo test -p universal-privacy-engine-core
 
-# TEE adapter
+# Mock adapter
 cargo test -p universal-privacy-engine-tee
 
 # Data ingestion

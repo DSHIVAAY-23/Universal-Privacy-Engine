@@ -10,8 +10,8 @@ pragma solidity ^0.8.0;
  * On Sapphire, it is PRIVATE by default.
  */
 contract PrivatePayroll {
-    // TRUSTED NOTARY (Placeholder - Replace with actual from UPE)
-    address public constant TRUSTED_NOTARY = 0x1234567890123456789012345678901234567890; 
+    // TRUSTED NOTARY (Set at deployment)
+    address public immutable TRUSTED_NOTARY;
 
     // PRIVATE STATE: Only the employee can see their own salary
     // The Sapphire ParaTime encrypts this automatically.
@@ -19,6 +19,15 @@ contract PrivatePayroll {
     mapping(address => bool) private hasProof;
 
     event SalaryVerified(address indexed employee, uint256 timestamp);
+
+    /**
+     * @dev Constructor sets the trusted notary address
+     * @param _trustedNotary Address of the notary that can sign salary proofs
+     */
+    constructor(address _trustedNotary) {
+        require(_trustedNotary != address(0), "Invalid notary address");
+        TRUSTED_NOTARY = _trustedNotary;
+    }
 
     // 1. Ingest Signed Proof from UPE (STLOP)
     function verifyAndStoreSalary(

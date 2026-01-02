@@ -1,0 +1,12 @@
+{
+  "name": "oasis-sapphire-demo",
+  "version": "1.0.0",
+  "description": "Oasis Sapphire Private Payroll Demo",
+  "scripts": {
+    "demo": "hardhat run scripts/demo_sapphire_flow.js"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.19.0"
+  }
+}

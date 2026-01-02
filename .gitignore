@@ -5,6 +5,29 @@
 **/target/
 Cargo.lock
 
+# Node.js
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+**/package-lock.json
+
+# Hardhat
+cache/
+**/cache/
+artifacts/
+**/artifacts/
+typechain/
+**/typechain/
+typechain-types/
+**/typechain-types/
+
+# Solidity
+*.abi
+*.bin
+
 # IDE files
 .vscode/
 .idea/
@@ -26,6 +49,8 @@ verifier.*
 # Environment files
 .env
 .env.local
+.env.*.local
 
 # Debug files
 *.pdb
+

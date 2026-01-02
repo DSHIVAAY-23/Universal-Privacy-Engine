@@ -1,121 +1,180 @@
-# Universal Privacy Engine (VeriVault Core)
+# Universal Privacy Engine (UPE) — Oasis Sapphire Institutional Privacy Layer
 
-> ⚠️ **Status: Alpha Research Prototype**  
-> This allows developers to build and test ZK verification flows.  
-> **Not production-ready.** No current hardware enclave (TEE) dependency.
-
-## Overview
-
-The **Universal Privacy Engine** is a modular framework for building verifiable computation systems. It abstracts the complexity of different proving backends (like SP1 zkVM) behind a unified Rust trait, allowing developers to focus on business logic.
-
-**Current Capabilities**:
-- **ZK-VM Integration**: Run Rust code inside the SP1 zkVM and generate Groth16/PLONK proofs.
-- **Recorded Data Verification**: Deterministically verify that JSON inputs match pre-recorded TLS response fixtures.
-- **Smart Contract Generation**: Auto-generate Solidity verifiers for your specific guest programs.
+> **Status: Research Prototype for Oasis ROSE Bloom Grant**  
+> Middleware infrastructure that transforms off-chain data into **privacy-preserving smart contract state** on Oasis Sapphire's Confidential EVM.
 
 ---
 
-## Security & Trust (Current State)
+## Overview
 
-This Alpha release is a **client-side research prototype**.
+The **Universal Privacy Engine (UPE)** is a privacy-preserving middleware framework built specifically for **Oasis Sapphire**, the first and only Confidential EVM. UPE enables institutions to settle sensitive off-chain data (payroll, compliance records, financial statements) into **encrypted on-chain state** without exposing plaintext information.
 
-- **Authenticity**: External data is verified against **Recorded TLS Evidence** (fixtures), ensuring the input matches a specific historical SHA256 hash and domain.
-- **Integrity**: The SP1 zkVM proves that the computation was performed correctly on the given inputs.
-- **Confidentiality**: **None in Alpha**. The prover has full visibility of the data. Confidentiality features (like TEEs) are planned for future releases.
+### Why Oasis Sapphire?
 
-See [TRUST_MODEL.md](TRUST_MODEL.md) for a detailed breakdown.
+Traditional smart contracts store all state publicly on-chain. Even "private" mappings in Solidity are readable by anyone with an archive node. **Oasis Sapphire changes this** by providing:
 
-### 🛤️ Security & Trust Roadmap
+- **Encrypted State by Default**: All contract storage is encrypted at the ParaTime level
+- **Confidential Computation**: Smart contracts can process sensitive data without exposure
+- **EVM Compatibility**: Deploy standard Solidity contracts with automatic privacy guarantees
 
-- **Phase 1 (Current):** Single Trusted Notary (Hardcoded Key). Suitable for demos and friendly pilots.
-- **Phase 2:** Multi-Notary Quorum. Requires M-of-N signatures to validate a fixture.
-- **Phase 3:** True zkTLS Integration. Replace the "Local Notary" with a decentralized MPC cluster (TLSNotary/DECO) so the Notary never sees plaintext data.
-- **Phase 4:** On-Chain Trust Root. Move the `TRUSTED_NOTARY_PUBKEY` to a smart contract to allow for Key Rotation and Revocation without re-deploying the app.
+UPE leverages these unique capabilities to create an **Institutional Privacy Layer** for regulated industries.
 
 ---
 
 ## Key Features
 
-### 🏗️ **Modular Core Architecture**
-- **Hexagonal Pattern**: `PrivacyEngine` trait decouples logic from backends.
-- **Swappable Backends**: Currently supports `Sp1Backend` (ZK) and a local Dev/Mock backend.
-- **Extensible**: Designed to support future backends (RISC0, TEEs) without rewriting app logic.
+### 🔐 **STLOP: Signed TLS Off-chain Proofs**
 
-### 📊 **Data Ingestion with "Signed TLS Fixtures (Pre-zkTLS)"**
-- **HttpProvider**: Fetches data and validates it against cryptographic fixtures.
-- **Fixture System**: proves "This JSON came from `example.com` at time `T`" (using recorded proof).
-- **ZkInputBuilder**: Helper to serialize public and private inputs for the zkVM.
+UPE introduces a novel proof system for ingesting off-chain data:
 
-### 🔐 **Smart Contract Generator**
-- CLI tool to generate `UniversalVerifier.sol`.
-- Embeds your program's specific Verification Key (VKey).
-- Ready for deployment to EVM chains (Sepolia, etc.).
+1. **Rust Notary Service** fetches data from external APIs (payroll systems, banks, compliance databases)
+2. **Cryptographic Signing** creates tamper-proof attestations of the data
+3. **On-Chain Verification** validates signatures before storing data in Sapphire's encrypted state
+
+**Example Use Case**: A company's payroll system generates salary data. The UPE Notary signs this data, and employees can verify their salary on-chain **without revealing it publicly**.
+
+### 🏗️ **PrivatePayroll Contract Suite**
+
+Our flagship demonstration contract (`contracts/oasis/src/PrivatePayroll.sol`) showcases:
+
+- **Confidential Storage**: Salary data stored in Sapphire's encrypted state
+- **Proof Verification**: EIP-191 signature validation from trusted notary
+- **Access Control**: Only employees can view their own salary via `getMySalary()`
+
+```solidity
+// On a normal EVM chain, this mapping is PUBLIC
+// On Sapphire, it is PRIVATE by default
+mapping(address => uint256) private salaries;
+```
+
+### 🚀 **ROFL Integration Roadmap**
+
+Future work will integrate **ROFL (Runtime Off-chain Logic)** for:
+
+- **Decentralized Notary**: Replace single trusted notary with ROFL-based MPC
+- **Off-Chain Computation**: Complex data processing before on-chain settlement
+- **Enhanced Privacy**: Zero-knowledge proofs combined with confidential state
 
 ---
 
-## Quick Start
+## Quick Demo
 
-### Installation
-
-```bash
-git clone https://github.com/your-org/universal-privacy-engine
-cd universal-privacy-engine
-cargo build --workspace
-```
-
-### Usage Example
-
-```rust
-use universal_privacy_engine_core::{
-    PrivacyEngine,
-    data_source::{HttpProvider, DataProvider, ZkInputBuilder}
-};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 1. Fetch data (Simulated zkTLS using fixtures for 'example.com')
-    let provider = HttpProvider::new();
-    let balance = provider.fetch(
-        "https://example.com", 
-        "data.balance"
-    ).await?;
-    
-    // 2. Build ZK input
-    let mut builder = ZkInputBuilder::new();
-    builder.add_public_data(balance);
-    
-    let zk_input = builder.build();
-    
-    // 3. Generate Proof (SP1)
-    // In dev, use MockBackend for speed. In prod, use Sp1Backend.
-    let backend = universal_privacy_engine_core::mock::MockBackend::new();
-    let receipt = backend.prove(&zk_input)?;
-    
-    // 4. Verify
-    assert!(backend.verify(&receipt)?);
-    
-    Ok(())
-}
-```
-
-### Run Tests & Benchmarks
+### Prerequisites
 
 ```bash
-# Verify the ZK logic
-cargo test --workspace
+# Install dependencies
+npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox
 
-# Run benchmarks
-cargo bench -p universal-privacy-engine-core
+# Set up Oasis Sapphire Testnet in hardhat.config.js
+```
+
+### Step 1: Compile Contracts
+
+```bash
+cd contracts/oasis
+npx hardhat compile
+```
+
+### Step 2: Deploy to Sapphire Testnet
+
+```bash
+npx hardhat run scripts/deploy.js --network sapphire-testnet
+```
+
+### Step 3: Generate STLOP Proof
+
+```bash
+# Run the Rust notary to sign salary data
+cargo run --bin notary -- \
+  --employee 0xYourAddress \
+  --salary 75000 \
+  --timestamp $(date +%s)
+```
+
+### Step 4: Verify and Store Salary
+
+```bash
+# Submit the signed proof to PrivatePayroll contract
+npx hardhat run scripts/verify_salary.js --network sapphire-testnet
+```
+
+### Step 5: Query Encrypted State
+
+```bash
+# Only the employee can see their own salary
+npx hardhat run scripts/get_salary.js --network sapphire-testnet
+# Output: 75000 (encrypted on-chain, visible only to you)
+```
+
+**🎥 Demo Video**: [Coming Soon - Grant Deliverable]
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Off-Chain Layer                          │
+│                                                             │
+│  ┌──────────────┐         ┌─────────────────┐             │
+│  │ Payroll API  │────────▶│  Rust Notary    │             │
+│  │ (External)   │         │  (STLOP Signer) │             │
+│  └──────────────┘         └────────┬────────┘             │
+│                                     │                       │
+└─────────────────────────────────────┼───────────────────────┘
+                                      │
+                                      │ Signed Proof
+                                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Oasis Sapphire ParaTime (On-Chain)             │
+│                                                             │
+│  ┌────────────────────────────────────────────────────┐   │
+│  │         PrivatePayroll.sol Contract                │   │
+│  │                                                    │   │
+│  │  • verifyAndStoreSalary(salary, timestamp, sig)   │   │
+│  │  • Validates notary signature (EIP-191)           │   │
+│  │  • Stores in ENCRYPTED state                      │   │
+│  │  • getMySalary() - Employee-only access           │   │
+│  └────────────────────────────────────────────────────┘   │
+│                                                             │
+│         🔒 All state encrypted by Sapphire ParaTime         │
+└─────────────────────────────────────────────────────────────┘
+                                      │
+                                      │ Future: ROFL
+                                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  ROFL (Future Enhancement)                  │
+│                                                             │
+│  • Decentralized notary via off-chain computation          │
+│  • MPC-based signing (no single point of trust)            │
+│  • Complex data transformations before settlement          │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Documentation
+## Grant Deliverables (Oasis ROSE Bloom)
 
-- **[TRUST_MODEL.md](TRUST_MODEL.md)**: Security assumptions and Alpha limitations.
-- **[ARCHITECTURE.md](ARCHITECTURE.md)**: System design and hexagonal patterns.
-- **[FUTURE_WORK.md](docs/FUTURE_WORK.md)**: Roadmap for zkTLS and TEEs.
-- **[ZKTLS_RECORDED_PROOF.md](docs/ZKTLS_RECORDED_PROOF.md)**: Details on the fixture verification system.
+This repository is being developed as part of the **Oasis ROSE Bloom Grant** program. Our deliverables include:
+
+### ✅ Phase 1: PrivatePayroll Contract Suite
+- [x] Solidity contracts leveraging Sapphire's encrypted state
+- [x] STLOP proof verification (EIP-191 signatures)
+- [x] Access control for confidential data queries
+- [x] Comprehensive NatSpec documentation
+
+### 🚧 Phase 2: Documentation & Demo (In Progress)
+- [ ] Architecture diagrams (Mermaid + visual assets)
+- [ ] Video walkthrough of PrivatePayroll deployment
+- [ ] Written tutorial for institutional use cases
+- [ ] Grant notes and technical deep dive
+
+### 🔮 Phase 3: ROFL Integration (Future)
+- [ ] Decentralized notary using ROFL
+- [ ] Off-chain computation for complex data processing
+- [ ] Enhanced privacy with zkTLS integration
+
+See [DELIVERABLES.md](DELIVERABLES.md) for detailed tracking.
 
 ---
 
@@ -123,21 +182,112 @@ cargo bench -p universal-privacy-engine-core
 
 ```
 universal-privacy-engine/
-├── core/                      # Core abstraction (PrivacyEngine trait)
-│   ├── src/data_source/       # HttpProvider & Recorded zkTLS
-├── adapters/
-│   ├── sp1/                   # SP1 zkVM integration
-│   └── tee/                   # (Experimental) Future TEE adapters
-├── contracts/                 # Solidity templates
-├── fixtures/                  # zkTLS recordings for testing
-└── guest/                     # Rust code that runs inside ZK-VM
+├── contracts/oasis/           # Sapphire-specific contracts
+│   └── src/
+│       └── PrivatePayroll.sol # Flagship demo contract
+├── core/                      # Rust notary service
+│   └── src/
+│       └── notary/            # STLOP signing logic
+├── docs/                      # Grant documentation
+│   └── oasis_grant_notes.md   # Demo steps & narrative
+├── scripts/                   # Deployment & testing scripts
+└── README.md                  # This file
 ```
+
+---
+
+## Security & Trust Model
+
+### Current Trust Assumptions
+
+**Alpha Prototype Status**: This is research infrastructure, not production-ready software.
+
+- **Notary Trust**: Single trusted notary (hardcoded address in contract)
+- **Data Authenticity**: Relies on notary's integrity to sign accurate data
+- **Confidentiality**: Provided by Sapphire's encrypted state (strong guarantee)
+- **Integrity**: Cryptographic signatures prevent tampering
+
+### Hardening Roadmap
+
+1. **Multi-Notary Quorum** (Phase 2): Require M-of-N signatures
+2. **ROFL Integration** (Phase 3): Decentralized off-chain computation
+3. **zkTLS** (Phase 4): Cryptographic proof of TLS data without trusted notary
+4. **On-Chain Key Rotation** (Phase 5): Smart contract-based notary key management
+
+See [TRUST_MODEL.md](TRUST_MODEL.md) for detailed analysis.
+
+---
+
+## Why Oasis Sapphire?
+
+### The Institutional Privacy Problem
+
+Regulated industries (finance, healthcare, HR) need to:
+- **Prove compliance** without revealing sensitive data
+- **Settle transactions** on-chain for auditability
+- **Maintain confidentiality** to protect customer privacy
+
+Traditional blockchains force a choice: **transparency OR privacy**. Sapphire provides **both**.
+
+### UPE's Solution
+
+By combining:
+- **Sapphire's encrypted state** (confidentiality)
+- **STLOP cryptographic proofs** (authenticity)
+- **Smart contract logic** (programmable compliance)
+
+UPE creates an **Institutional Privacy Layer** where:
+- Payroll data is verifiable but not public
+- Compliance records are auditable but not exposed
+- Financial statements are provable but not readable
+
+---
+
+## Documentation
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)**: Technical design and Sapphire integration
+- **[DELIVERABLES.md](DELIVERABLES.md)**: Grant milestones and progress tracking
+- **[TRUST_MODEL.md](TRUST_MODEL.md)**: Security assumptions and hardening roadmap
+- **[RESEARCH_SCOPE.md](RESEARCH_SCOPE.md)**: Oasis-focused research objectives
+- **[docs/oasis_grant_notes.md](docs/oasis_grant_notes.md)**: Demo steps and grant narrative
+
+---
+
+## Links & Resources
+
+- **Oasis Network**: [https://oasisprotocol.org](https://oasisprotocol.org)
+- **Sapphire Documentation**: [https://docs.oasis.io/dapp/sapphire/](https://docs.oasis.io/dapp/sapphire/)
+- **ROFL Documentation**: [https://docs.oasis.io/dapp/rofl/](https://docs.oasis.io/dapp/rofl/)
+- **ROSE Bloom Grants**: [https://oasisprotocol.org/grants](https://oasisprotocol.org/grants)
 
 ---
 
 ## Disclaimer
 
-**Research Software**.
-This codebase is for experimental and development use only.
-It provides **integrity** proofs (ZK) but does not yet provide **confidentiality** guarantees (TEEs/MPC).
-Do not use with real value.
+**Research Prototype**: This software is for experimental and development use only. It demonstrates the feasibility of privacy-preserving institutional data settlement on Oasis Sapphire but is **not production-ready**.
+
+**Alpha Limitations**:
+- Single trusted notary (centralization risk)
+- No formal security audit
+- Limited testing on Sapphire Testnet
+- ROFL integration not yet implemented
+
+**Do not use with real sensitive data or production value.**
+
+---
+
+## License
+
+MIT License - See [LICENSE](LICENSE) for details.
+
+---
+
+## Contact
+
+For grant-related inquiries or technical questions:
+- **GitHub Issues**: [Universal Privacy Engine](https://github.com/your-org/universal-privacy-engine/issues)
+- **Oasis Discord**: [#sapphire-developers](https://oasis.io/discord)
+
+---
+
+**Built for Oasis Sapphire** 🌸 | **Powered by Confidential EVM** 🔐

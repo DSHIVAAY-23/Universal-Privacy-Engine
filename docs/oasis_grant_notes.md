@@ -1,4 +1,4 @@
-# Oasis ROSE Bloom Grant Notes
+# Oasis ROSE Bloom Grant — Notes (Polished)
 
 ## Grant Narrative: Key Phrases
 
@@ -6,10 +6,11 @@ Use these phrases when communicating with grant reviewers, ecosystem partners, o
 
 ### Core Positioning
 
-- **"Institutional Privacy Layer for Oasis Sapphire"**
+- **"Institutional Privacy Layer for Oasis Sapphire Confidential EVM"**
 - **"Privacy-preserving proof ingestion on Confidential EVM"**
 - **"Encrypted state by default — no additional cryptography required"**
 - **"STLOP: Signed TLS Off-chain Proofs for institutional data settlement"**
+- **"ROFL-ready architecture for decentralized notary migration"**
 
 ### Technical Differentiators
 
@@ -17,6 +18,7 @@ Use these phrases when communicating with grant reviewers, ecosystem partners, o
 - **"Standard Solidity contracts with automatic confidentiality guarantees"**
 - **"Lightweight cryptographic proofs (~50k gas) vs. zkSNARKs (~500k gas)"**
 - **"ROFL integration roadmap for decentralized notary (MPC + zkTLS)"**
+- **"Proof is public, data is private — Sapphire's unique value proposition"**
 
 ### Use Case Messaging
 
@@ -430,6 +432,8 @@ See [DELIVERABLES.md](file:///data/Universal-Privacy-Engine/DELIVERABLES.md) for
 
 ---
 
-**Last Updated**: January 2, 2026  
+**Last Updated**: January 4, 2026  
 **Grant Program**: Oasis ROSE Bloom  
 **Status**: Active Development (Phase 2: Documentation & Demo)
+
+**See also**: [OASIS_DEMO_WALKTHROUGH.md](OASIS_DEMO_WALKTHROUGH.md) for the exact demo steps.

@@ -46,3 +46,91 @@ It is important to understand the difference between **transaction inputs** and 
 *   **Storage State**: Once stored in the `mapping(address => uint256) private salaries`, the data is **fully encrypted** by the Sapphire ParaTime key. It cannot be read by node operators or via `getStorageAt`.
 
 This demo focuses on demonstrating the **Encrypted Storage** and **Access Control** capabilities.
+
+---
+
+## Merged Demo Notes (from DEMO.md)
+
+### What This Demo Proves
+
+#### ✅ Technical Capabilities Demonstrated
+
+1. **STLOP Proof Verification**
+   - EIP-191 signature verification works on-chain
+   - Notary trust anchor enforcement is functional
+   - Timestamp validation prevents replay attacks
+
+2. **Sapphire Encrypted State**
+   - Private mappings are cryptographically encrypted at ParaTime level
+   - Access control ensures only employees can view their own data
+   - State queries work correctly with encrypted storage
+
+3. **Cross-Environment Compatibility**
+   - Standard Solidity contracts work on Sapphire
+   - Hardhat tooling is fully compatible
+   - No custom compilers or frameworks required
+
+### ❌ What This Demo Does NOT Prove
+
+1. **Data Authenticity**
+   - No proof that data came from a legitimate payroll source
+   - Signatures are from a test notary (not institutional)
+   - No zkTLS or authenticated data ingestion
+
+2. **Institutional Trustworthiness**
+   - No KYC or identity verification
+   - No legal entity validation
+   - No institutional partnerships
+
+3. **Production Readiness**
+   - No security audit
+   - No formal verification
+   - No production hardening
+   - Single trusted notary (centralization risk)
+
+4. **Regulatory Compliance**
+   - No legal framework
+   - No regulatory approval
+   - No compliance with financial regulations
+
+### Research Context
+
+This demo is part of early-stage research into:
+
+1. **Privacy-Preserving Data Settlement**: Can we settle sensitive off-chain data on-chain without exposure?
+2. **Sapphire Integration**: How do we leverage Confidential EVM for institutional use cases?
+3. **STLOP Methodology**: Are lightweight signed proofs sufficient for Phase 1?
+
+**This is NOT**:
+- A production system
+- An institutional product
+- A regulatory solution
+- A finished protocol
+
+### Next Steps (Research Directions)
+
+#### Short-term (Grant Scope)
+- Deploy to Sapphire Testnet
+- Create demo video showing full flow
+- Document deployment steps
+- Benchmark gas costs
+
+#### Medium-term (Post-Grant)
+- Multi-notary support (M-of-N signatures)
+- Additional use cases (compliance, financial statements)
+- Developer SDK for STLOP proof generation
+- Preliminary security review
+
+#### Long-term (ROFL Integration)
+- Decentralized notary with MPC signing
+- zkTLS proofs for data authenticity
+- Production hardening and formal audit
+- Institutional partnerships
+
+### Disclaimer
+
+This is experimental research software. It has NOT been audited, is NOT production-ready, and should NOT be used for any real-world financial or compliance purposes.
+
+**No institutional partnerships, users, or real-world deployments exist.**
+
+Use at your own risk.

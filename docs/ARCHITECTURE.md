@@ -1,98 +1,72 @@
-# Architecture — Oasis Sapphire Institutional Privacy Layer
+# Architecture — UPE for Oasis Sapphire (Confidential EVM)
 
-## Overview
+## Purpose
 
-The **Universal Privacy Engine (UPE)** is designed as privacy-preserving middleware for Oasis Sapphire's Confidential EVM. This document outlines the technical architecture, data flow, and integration patterns specific to Sapphire's encrypted state capabilities.
+This document describes the minimal, Sapphire-centric architecture for the Universal Privacy Engine (UPE) as required for an Oasis ROSE Bloom Grant. The goal: ingest sensitive Web2 data, verify it with signed TLS observation proofs (STLOP), and *settle the verified data into Sapphire's encrypted contract state* so the data is confidential by default.
 
----
+## End-to-end Flow (single story)
 
-## Core Architecture
+1. **Bank API (HTTPS)** — the source of truth (e.g., payroll provider).  
+2. **UPE Notary (Rust / STLOP)** — a lightweight trusted notary that:
+   - performs an HTTPS fetch,
+   - records the TLS transcript,
+   - produces a signed observation proof (STLOP JSON).
+3. **Signed Proof (public JSON)** — contains a compact verifiable statement; the proof is public, auditable, and can be verified on-chain. **The proof contains no secret plaintext**; only a pointer + authenticated digest of the observation.
+4. **Oasis Sapphire Contract (Solidity)** — `PrivatePayroll.sol` verifies the signature and stores the related data **in encrypted private state**. The proof is public; the stored data is private.
+5. **Private State** — Sapphire's ParaTime Key Manager encrypts contract storage such that only authorized users (or the contract logic) can access the plaintext. On-chain observers cannot read the stored salary/RWA values.
 
-### Three-Layer Design
+## Security & Assumptions (brief)
+
+- The notary signer key is a trust anchor for Phase 1. The design anticipates migration to ROFL (decentralized notaries) in Phase 2.
+- Proof verification uses standard ECDSA/Ed25519 signature verification on-chain.
+- Confidentiality is enforced by Sapphire's encrypted contract storage, not by obfuscation or off-chain secrets.
+
+## Diagram (text)
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Layer 1: Off-Chain Data                     │
-│                                                                 │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
-│  │ Payroll API  │  │  Bank API    │  │ Compliance   │         │
-│  │ (External)   │  │  (External)  │  │ DB (External)│         │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘         │
-│         │                  │                  │                 │
-│         └──────────────────┼──────────────────┘                 │
-│                            │                                    │
-└────────────────────────────┼────────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                 Layer 2: Rust Notary (STLOP)                    │
-│                                                                 │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │              UPE Notary Service                          │  │
-│  │                                                          │  │
-│  │  1. Fetch data from external APIs                       │  │
-│  │  2. Validate data format and authenticity                │  │
-│  │  3. Generate cryptographic signature (ECDSA/Ed25519)     │  │
-│  │  4. Create STLOP proof: (data, timestamp, signature)     │  │
-│  └──────────────────────────┬───────────────────────────────┘  │
-│                             │                                   │
-└─────────────────────────────┼───────────────────────────────────┘
-                              │ STLOP Proof
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│          Layer 3: Oasis Sapphire ParaTime (On-Chain)            │
-│                                                                 │
-│  ┌────────────────────────────────────────────────────────┐    │
-│  │         PrivatePayroll.sol (Solidity Contract)         │    │
-│  │                                                        │    │
-│  │  • verifyAndStoreSalary(salary, timestamp, sig)       │    │
-│  │    ├─ Reconstruct message hash                        │    │
-│  │    ├─ Recover signer via ecrecover()                  │    │
-│  │    ├─ Validate signer == TRUSTED_NOTARY               │    │
-│  │    └─ Store in ENCRYPTED state                        │    │
-│  │                                                        │    │
-│  │  • getMySalary() → uint256                            │    │
-│  │    ├─ Check msg.sender has proof                      │    │
-│  │    └─ Return encrypted salary (only visible to caller)│    │
-│  └────────────────────────────────────────────────────────┘    │
-│                                                                 │
-│         🔒 Sapphire ParaTime: All state encrypted by TEE        │
-└─────────────────────────────────────────────────────────────────┘
+Bank API → UPE Notary (STLOP signer) → Signed Proof (public) → Sapphire Contract (verify & encrypted store)
 ```
 
----
+## Why Sapphire?
 
-## Layer 1: Off-Chain Data Sources
+### The Institutional Privacy Problem
 
-### Supported Data Types
+Traditional blockchains force a binary choice:
 
-UPE is designed to ingest institutional data from:
+| Approach | Transparency | Privacy | Institutional Viability |
+|----------|--------------|---------|-------------------------|
+| **Public Blockchain** (Ethereum, Polygon) | ✅ Full | ❌ None | ❌ Unacceptable for sensitive data |
+| **Private Blockchain** (Hyperledger, Corda) | ❌ Limited | ✅ Full | ⚠️ Loses decentralization benefits |
+| **Zero-Knowledge Proofs** (zkSNARKs) | ✅ Verifiable | ✅ Selective | ⚠️ Complex, expensive, limited state |
 
-1. **Payroll Systems**: Salary, bonuses, employment status
-2. **Financial APIs**: Bank balances, credit scores, transaction history
-3. **Compliance Databases**: KYC/AML records, regulatory filings
-4. **Healthcare Systems**: Medical records, insurance claims (future)
+**Oasis Sapphire's Unique Solution**:
+- ✅ **Public blockchain** (decentralization, censorship resistance)
+- ✅ **Encrypted state** (confidentiality by default)
+- ✅ **EVM compatibility** (existing tooling, developer familiarity)
 
-### Data Authenticity Challenge
+### Sapphire's Confidential EVM Advantage
 
-**Problem**: How do we trust that off-chain data is authentic?
+```solidity
+// On Ethereum/Polygon/BSC:
+mapping(address => uint256) private salaries; 
+// ❌ "private" keyword is a LIE - anyone can read this from storage
 
-**Current Solution (Alpha)**: Trusted notary signs the data  
-**Future Solution (ROFL)**: zkTLS proofs + MPC signing (no single point of trust)
+// On Oasis Sapphire:
+mapping(address => uint256) private salaries;
+// ✅ ACTUALLY PRIVATE - encrypted at ParaTime level
+```
 
----
+**Technical Mechanism**: Sapphire's ParaTime uses **Trusted Execution Environments (TEEs)** to encrypt all contract state. Even validators cannot read the plaintext data.
 
-## Layer 2: Rust Notary Service (STLOP)
+## STLOP Proof System
 
-### STLOP: Signed TLS Off-chain Proof
+### Design Philosophy
 
-**Design Philosophy**: Lightweight cryptographic proofs for off-chain data ingestion.
+Lightweight cryptographic proofs for off-chain data ingestion.
 
-#### Notary Workflow
+### Notary Workflow (Pseudocode)
 
 ```rust
-// Pseudocode for Rust Notary Service
-
 async fn generate_stlop_proof(
     api_url: &str,
     employee_address: Address,
@@ -124,7 +98,7 @@ async fn generate_stlop_proof(
 }
 ```
 
-#### Signature Scheme: EIP-191
+### Signature Scheme: EIP-191
 
 **Why EIP-191?**
 - Standard Ethereum signed message format
@@ -136,7 +110,7 @@ async fn generate_stlop_proof(
 "\x19Ethereum Signed Message:\n32" + keccak256(employee_address, salary, timestamp)
 ```
 
-#### Trust Model
+### Trust Model
 
 **Alpha Prototype**:
 - Single trusted notary (hardcoded address in contract)
@@ -147,9 +121,7 @@ async fn generate_stlop_proof(
 - zkTLS proofs for data authenticity
 - No single point of trust
 
----
-
-## Layer 3: Sapphire Smart Contracts
+## Sapphire Smart Contracts
 
 ### PrivatePayroll.sol Architecture
 
@@ -210,109 +182,6 @@ function getMySalary() external view returns (uint256) {
 
 **Privacy Guarantee**: Only `msg.sender` can read their own salary. Even contract owner cannot access other employees' data.
 
----
-
-## Sapphire-Specific Features
-
-### 1. Encrypted State
-
-**How It Works**:
-- Sapphire ParaTime runs inside a Trusted Execution Environment (TEE)
-- All contract storage is encrypted with a key only accessible inside the TEE
-- Validators cannot read plaintext state
-
-**UPE Benefit**: Salary data is confidential by default, no additional encryption logic needed.
-
-### 2. Confidential Randomness
-
-**Future Enhancement**: Use Sapphire's VRF for fair salary audits.
-
-```solidity
-// Example: Random salary audit (future work)
-function triggerRandomAudit() external onlyAuditor {
-    uint256 randomIndex = sapphire.randomUint256() % employeeCount;
-    address selectedEmployee = employees[randomIndex];
-    // Audit logic...
-}
-```
-
-### 3. Encrypted Events (Future)
-
-**Current Limitation**: Events are public (even on Sapphire).
-
-**Future Work**: Use Sapphire's encrypted event system to emit confidential logs.
-
----
-
-## Data Flow: End-to-End Example
-
-### Scenario: Employee Verifies Salary for Loan Application
-
-```
-┌─────────────┐
-│  Employee   │
-│  (Alice)    │
-└──────┬──────┘
-       │
-       │ 1. Request STLOP proof
-       ▼
-┌─────────────────────┐
-│   UPE Notary        │
-│   (Rust Service)    │
-└──────┬──────────────┘
-       │
-       │ 2. Fetch salary from Payroll API
-       │    (e.g., "Alice: $75,000")
-       │
-       │ 3. Sign: keccak256(Alice, 75000, timestamp)
-       │
-       │ 4. Return (75000, timestamp, signature)
-       ▼
-┌─────────────┐
-│  Employee   │
-│  (Alice)    │
-└──────┬──────┘
-       │
-       │ 5. Submit to Sapphire contract:
-       │    verifyAndStoreSalary(75000, timestamp, sig)
-       ▼
-┌──────────────────────────────┐
-│  PrivatePayroll.sol          │
-│  (Sapphire Testnet)          │
-│                              │
-│  • Verify signature ✅       │
-│  • Store in encrypted state  │
-│  • Emit SalaryVerified event │
-└──────┬───────────────────────┘
-       │
-       │ 6. Alice queries: getMySalary()
-       │    Returns: 75000 (only visible to Alice)
-       ▼
-┌─────────────┐
-│  Employee   │
-│  (Alice)    │
-│             │
-│ ✅ Verified │
-└─────────────┘
-       │
-       │ 7. Alice shares proof with bank
-       │    (Bank can verify on-chain without seeing amount)
-       ▼
-┌─────────────┐
-│    Bank     │
-│             │
-│ ✅ Approved │
-└─────────────┘
-```
-
-**Privacy Properties**:
-- ✅ Bank cannot read Alice's salary (encrypted state)
-- ✅ Other employees cannot read Alice's salary (access control)
-- ✅ Blockchain observers cannot read Alice's salary (Sapphire encryption)
-- ✅ Alice can prove salary exists without revealing amount (future: range proofs)
-
----
-
 ## ROFL Integration (Future Architecture)
 
 ### Current vs. Future
@@ -358,8 +227,6 @@ function triggerRandomAudit() external onlyAuditor {
 
 **Timeline**: 6-9 months (requires additional funding)
 
----
-
 ## Security Considerations
 
 ### Threat Model
@@ -380,71 +247,6 @@ function triggerRandomAudit() external onlyAuditor {
 
 **Note**: These assumptions are acceptable for a research prototype but require hardening for production.
 
----
-
-## Gas Optimization
-
-### Benchmark Results (Sapphire Testnet)
-
-| Operation | Gas Cost | Comparison to Ethereum |
-|-----------|----------|------------------------|
-| `verifyAndStoreSalary()` | ~50,000 | Similar (~55k on Ethereum) |
-| `getMySalary()` | ~25,000 | Similar (~23k on Ethereum) |
-| Signature verification | ~3,000 | Identical (EVM precompile) |
-
-**Conclusion**: Sapphire's encrypted state does NOT significantly increase gas costs. The TEE encryption happens at the ParaTime level, not in EVM execution.
-
----
-
-## Developer Experience
-
-### Deployment Workflow
-
-```bash
-# 1. Compile contracts
-npx hardhat compile
-
-# 2. Deploy to Sapphire Testnet
-npx hardhat run scripts/deploy.js --network sapphire-testnet
-
-# 3. Verify on Sapphire Explorer
-npx hardhat verify --network sapphire-testnet <CONTRACT_ADDRESS>
-```
-
-### Testing Workflow
-
-```bash
-# 1. Run Rust notary locally
-cargo run --bin notary
-
-# 2. Generate STLOP proof
-curl -X POST http://localhost:3000/generate-proof \
-  -d '{"employee": "0xABC...", "salary": 75000}'
-
-# 3. Submit proof to contract
-npx hardhat run scripts/submit-proof.js --network sapphire-testnet
-```
-
-**Key Insight**: UPE uses standard Solidity and Hardhat tooling. No custom compilers or frameworks required.
-
----
-
-## Comparison to Alternative Architectures
-
-### vs. zkSNARK-Based Privacy
-
-| Aspect | zkSNARKs | UPE + Sapphire |
-|--------|----------|----------------|
-| **Privacy** | ✅ Selective disclosure | ✅ Full encrypted state |
-| **Complexity** | ❌ Circuit design required | ✅ Standard Solidity |
-| **Proving Time** | ❌ Minutes (client-side) | ✅ Instant (signature) |
-| **Verification Cost** | ❌ ~500k gas | ✅ ~50k gas |
-| **State Storage** | ⚠️ Limited (Merkle roots) | ✅ Unlimited (encrypted) |
-
-**Conclusion**: UPE is simpler and more practical for institutional use cases requiring large confidential state.
-
----
-
 ## Conclusion
 
 The Universal Privacy Engine leverages **Oasis Sapphire's unique Confidential EVM** to create an Institutional Privacy Layer with:
@@ -458,6 +260,6 @@ The Universal Privacy Engine leverages **Oasis Sapphire's unique Confidential EV
 
 ---
 
-**Last Updated**: January 2, 2026  
+**Last Updated**: January 4, 2026  
 **Grant Program**: Oasis ROSE Bloom  
-**Architecture Status**: Phase 2 (Documentation Complete)
+**Architecture Status**: Phase 2 (Sapphire-Focused)

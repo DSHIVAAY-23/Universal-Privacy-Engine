@@ -102,9 +102,11 @@ impl NotarySigner {
         let employee_addr = Address::from_str(employee_address)
             .map_err(|e| NotaryError::InvalidAddress(e.to_string()))?;
         
-        // TODO: In production, fetch real salary data from payroll API using zkTLS
-        // For now, use mock data
-        let salary = "75000"; // $75,000
+        // TODO(phase-2): replace this with a real TLSNotary MPC proof.
+        // Flow: browser opens TLS session with payroll provider → generates
+        // local transcript proof → notary verifies proof via MPC handshake
+        // → signs only after proof checks out. See docs/ARCHITECTURE.md.
+        let salary = "75000"; // mock — $75,000
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()

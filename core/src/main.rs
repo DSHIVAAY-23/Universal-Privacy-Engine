@@ -60,6 +60,7 @@ async fn main() {
     // Build router
     let app = Router::new()
         .route("/api/health", get(health_check))
+        .route("/healthz", get(health_check))          // liveness probe
         .route("/api/generate-proof", post(generate_proof))
         .layer(cors)
         .with_state(state);
@@ -74,6 +75,7 @@ async fn main() {
     println!("🚀 Server listening on http://{}", addr);
     println!("📡 Endpoints:");
     println!("   GET  /api/health");
+    println!("   GET  /healthz         (liveness probe)");
     println!("   POST /api/generate-proof");
     println!("");
 

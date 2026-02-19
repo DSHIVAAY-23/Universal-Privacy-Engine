@@ -143,9 +143,9 @@ On any standard EVM, `private` mappings are readable via `eth_getStorageAt`. Sap
 
 ---
 
-## Builder
+## About the Builder
 
-**Shivaay Labs** — solo founder, 3+ years building on Rust + Solidity + ZK/TEE stacks.  
+
 GitHub: [github.com/DSHIVAAY-23](https://github.com/DSHIVAAY-23)
 
 ---

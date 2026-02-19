@@ -1,293 +1,231 @@
-# Universal Privacy Engine (UPE) — Oasis Sapphire Institutional Privacy Layer
+# Universal Privacy Engine (UPE)
 
-> **Status: Research Prototype for Oasis ROSE Bloom Grant**  
-> Middleware infrastructure that transforms off-chain data into **privacy-preserving smart contract state** on Oasis Sapphire's Confidential EVM.
+> **Bring private Web2 data on-chain — without exposing it.**
 
----
-
-## Overview
-
-The **Universal Privacy Engine (UPE)** is a privacy-preserving middleware framework built specifically for **Oasis Sapphire**, the first and only Confidential EVM. UPE enables institutions to settle sensitive off-chain data (payroll, compliance records, financial statements) into **encrypted on-chain state** without exposing plaintext information.
-
-### Why Oasis Sapphire?
-
-Traditional smart contracts store all state publicly on-chain. Even "private" mappings in Solidity are readable by anyone with an archive node. **Oasis Sapphire changes this** by providing:
-
-- **Encrypted State by Default**: All contract storage is encrypted at the ParaTime level
-- **Confidential Computation**: Smart contracts can process sensitive data without exposure
-- **EVM Compatibility**: Deploy standard Solidity contracts with automatic privacy guarantees
-
-UPE leverages these unique capabilities to create an **Institutional Privacy Layer** for regulated industries.
+UPE is a privacy-preserving oracle that lets users prove facts about their off-chain data (salary, credit score, assets) to smart contracts on **Oasis Sapphire**, without ever revealing the raw data on-chain. Built for the [Oasis ROSE Bloom Grant](https://oasisprotocol.org/).
 
 ---
 
-## Key Features
+## 🔴 Live Demo
 
-### 🔐 **STLOP: Signed TLS Off-chain Proofs**
+**[https://universal-privacy-engine.vercel.app](https://universal-privacy-engine-a1kfpf0no-dshivaay23s-projects.vercel.app)**
 
-UPE introduces a novel proof system for ingesting off-chain data:
-
-1. **Rust Notary Service** fetches data from external APIs (payroll systems, banks, compliance databases)
-2. **Cryptographic Signing** creates tamper-proof attestations of the data
-3. **On-Chain Verification** validates signatures before storing data in Sapphire's encrypted state
-
-**Example Use Case**: A company's payroll system generates salary data. The UPE Notary signs this data, and employees can verify their salary on-chain **without revealing it publicly**.
-
-### 🏗️ **PrivatePayroll Contract Suite**
-
-Our flagship demonstration contract (`contracts/oasis/src/PrivatePayroll.sol`) showcases:
-
-- **Confidential Storage**: Salary data stored in Sapphire's encrypted state
-- **Proof Verification**: EIP-191 signature validation from trusted notary
-- **Access Control**: Only employees can view their own salary via `getMySalary()`
-
-```solidity
-// On a normal EVM chain, this mapping is PUBLIC
-// On Sapphire, it is PRIVATE by default
-mapping(address => uint256) private salaries;
-```
-
-### 🚀 **ROFL Integration Roadmap**
-
-Future work will integrate **ROFL (Runtime Off-chain Logic)** for:
-
-- **Decentralized Notary**: Replace single trusted notary with ROFL-based MPC
-- **Off-Chain Computation**: Complex data processing before on-chain settlement
-- **Enhanced Privacy**: Zero-knowledge proofs combined with confidential state
+Connect MetaMask on Oasis Sapphire Testnet → click **Start Verification** → your salary is cryptographically proven and stored encrypted on-chain.
 
 ---
 
-## Quick Demo
+## How It Works
 
-### Prerequisites
-
-```bash
-# Install dependencies
-npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox
-
-# Set up Oasis Sapphire Testnet in hardhat.config.js
+```
+User Wallet
+    │
+    ▼
+React Frontend (Vercel)
+    │  POST /api/generate-proof
+    ▼
+Rust Notary Service  ──── fetches payroll data
+    │  ECDSA-signed STLOP proof
+    ▼
+PrivatePayroll.sol (Oasis Sapphire Testnet)
+    │  verifies signature on-chain
+    ▼
+Encrypted Contract State (TEE)
+    │  only the employee's wallet can decrypt
+    ▼
+User sees their salary ✅
 ```
 
-### Step 1: Compile Contracts
-
-```bash
-cd contracts/oasis
-npx hardhat compile
-```
-
-### Step 2: Deploy to Sapphire Testnet
-
-```bash
-npx hardhat run scripts/deploy.js --network sapphire-testnet
-```
-
-### Step 3: Generate STLOP Proof
-
-```bash
-# Run the Rust notary to sign salary data
-cargo run --bin notary -- \
-  --employee 0xYourAddress \
-  --salary 75000 \
-  --timestamp $(date +%s)
-```
-
-### Step 4: Verify and Store Salary
-
-```bash
-# Submit the signed proof to PrivatePayroll contract
-npx hardhat run scripts/verify_salary.js --network sapphire-testnet
-```
-
-### Step 5: Query Encrypted State
-
-```bash
-# Only the employee can see their own salary
-npx hardhat run scripts/get_salary.js --network sapphire-testnet
-# Output: 75000 (encrypted on-chain, visible only to you)
-```
-
-**🎥 Demo Video**: [Coming Soon - Grant Deliverable]
+**Key properties:**
+- The proof is **public and auditable** — anyone can verify the notary signed it
+- The salary data is **private** — Sapphire's TEE encrypts it; no one else can read it
+- The frontend has **zero mock data** — every proof comes from the live Rust API
 
 ---
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Off-Chain Layer                          │
-│                                                             │
-│  ┌──────────────┐         ┌─────────────────┐             │
-│  │ Payroll API  │────────▶│  Rust Notary    │             │
-│  │ (External)   │         │  (STLOP Signer) │             │
-│  └──────────────┘         └────────┬────────┘             │
-│                                     │                       │
-└─────────────────────────────────────┼───────────────────────┘
-                                      │
-                                      │ Signed Proof
-                                      ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Oasis Sapphire ParaTime (On-Chain)             │
-│                                                             │
-│  ┌────────────────────────────────────────────────────┐   │
-│  │         PrivatePayroll.sol Contract                │   │
-│  │                                                    │   │
-│  │  • verifyAndStoreSalary(salary, timestamp, sig)   │   │
-│  │  • Validates notary signature (EIP-191)           │   │
-│  │  • Stores in ENCRYPTED state                      │   │
-│  │  • getMySalary() - Employee-only access           │   │
-│  └────────────────────────────────────────────────────┘   │
-│                                                             │
-│         🔒 All state encrypted by Sapphire ParaTime         │
-└─────────────────────────────────────────────────────────────┘
-                                      │
-                                      │ Future: ROFL
-                                      ▼
-┌─────────────────────────────────────────────────────────────┐
-│                  ROFL (Future Enhancement)                  │
-│                                                             │
-│  • Decentralized notary via off-chain computation          │
-│  • MPC-based signing (no single point of trust)            │
-│  • Complex data transformations before settlement          │
-└─────────────────────────────────────────────────────────────┘
-```
+| Component | Technology | Status |
+|---|---|---|
+| **Notary Service** | Rust, Axum, ECDSA (secp256k1) | ✅ Live |
+| **Smart Contract** | Solidity, Oasis Sapphire | ✅ Deployed |
+| **Frontend** | React, Wagmi, RainbowKit, Vite | ✅ Live on Vercel |
+
+### Contract
+- **Network**: Oasis Sapphire Testnet (Chain ID: 23295)
+- **Address**: `0x55bB3b7871fBf8a5BeB289079aAC9Dc13AA97024`
+- **Notary Address**: `0xFCAd0B19bB29D4674531d6f115237E16AfCE377c`
 
 ---
 
-## Grant Deliverables (Oasis ROSE Bloom)
-
-This repository is being developed as part of the **Oasis ROSE Bloom Grant** program. Our deliverables include:
-
-### ✅ Phase 1: PrivatePayroll Contract Suite
-- [x] Solidity contracts leveraging Sapphire's encrypted state
-- [x] STLOP proof verification (EIP-191 signatures)
-- [x] Access control for confidential data queries
-- [x] Comprehensive NatSpec documentation
-
-### 🚧 Phase 2: Documentation & Demo (In Progress)
-- [ ] Architecture diagrams (Mermaid + visual assets)
-- [ ] Video walkthrough of PrivatePayroll deployment
-- [ ] Written tutorial for institutional use cases
-- [ ] Grant notes and technical deep dive
-
-### 🔮 Phase 3: ROFL Integration (Future)
-- [ ] Decentralized notary using ROFL
-- [ ] Off-chain computation for complex data processing
-- [ ] Enhanced privacy with zkTLS integration
-
-See [DELIVERABLES.md](DELIVERABLES.md) for detailed tracking.
-
----
-
-## Project Structure
+## Repository Structure
 
 ```
-universal-privacy-engine/
-├── contracts/oasis/           # Sapphire-specific contracts
+Universal-Privacy-Engine/
+├── core/               # Rust Notary REST API
+│   ├── src/
+│   │   ├── main.rs     # Axum server (CORS, /api/health, /api/generate-proof)
+│   │   └── notary/     # ECDSA signing (EIP-191 compatible)
+│   └── Cargo.toml
+├── contracts/
+│   └── oasis/          # Solidity contracts for Sapphire
+│       └── src/
+│           └── PrivatePayroll.sol
+├── frontend/           # React application
 │   └── src/
-│       └── PrivatePayroll.sol # Flagship demo contract
-├── core/                      # Rust notary service
-│   └── src/
-│       └── notary/            # STLOP signing logic
-├── docs/                      # Grant documentation
-│   └── oasis_grant_notes.md   # Demo steps & narrative
-├── scripts/                   # Deployment & testing scripts
-└── README.md                  # This file
+│       ├── lib/notary.ts       # Notary API client
+│       ├── hooks/              # Wagmi contract hooks
+│       └── components/         # UI components
+└── docs/               # Architecture & grant documentation
 ```
 
 ---
 
-## Security & Trust Model
+## Run Locally
 
-### Current Trust Assumptions
+### Prerequisites
+- Rust (stable) + Cargo
+- Node.js 18+
+- MetaMask with [Oasis Sapphire Testnet](https://docs.oasis.io/dapp/sapphire/network) configured
 
-**Alpha Prototype Status**: This is research infrastructure, not production-ready software.
+### 1. Start the Rust Notary
 
-- **Notary Trust**: Single trusted notary (hardcoded address in contract)
-- **Data Authenticity**: Relies on notary's integrity to sign accurate data
-- **Confidentiality**: Provided by Sapphire's encrypted state (strong guarantee)
-- **Integrity**: Cryptographic signatures prevent tampering
+```bash
+cd core
+cp .env.example .env
+# Edit .env — set NOTARY_PRIVATE_KEY to any secp256k1 private key
 
-### Hardening Roadmap
+PORT=3002 cargo run --release
+# → 🚀 Server listening on http://0.0.0.0:3002
+```
 
-1. **Multi-Notary Quorum** (Phase 2): Require M-of-N signatures
-2. **ROFL Integration** (Phase 3): Decentralized off-chain computation
-3. **zkTLS** (Phase 4): Cryptographic proof of TLS data without trusted notary
-4. **On-Chain Key Rotation** (Phase 5): Smart contract-based notary key management
+### 2. Expose via Cloudflare Tunnel (for frontend access)
 
-See [TRUST_MODEL.md](TRUST_MODEL.md) for detailed analysis.
+```bash
+# Install once:
+sudo apt install cloudflared
 
----
+# Start tunnel:
+cloudflared tunnel --url http://localhost:3002
+# → Copy the https://XXXX.trycloudflare.com URL
+```
 
-## Why Oasis Sapphire?
+### 3. Start the Frontend
 
-### The Institutional Privacy Problem
+```bash
+cd frontend
+cp .env.example .env
+# Set VITE_NOTARY_API_URL=https://XXXX.trycloudflare.com
 
-Regulated industries (finance, healthcare, HR) need to:
-- **Prove compliance** without revealing sensitive data
-- **Settle transactions** on-chain for auditability
-- **Maintain confidentiality** to protect customer privacy
-
-Traditional blockchains force a choice: **transparency OR privacy**. Sapphire provides **both**.
-
-### UPE's Solution
-
-By combining:
-- **Sapphire's encrypted state** (confidentiality)
-- **STLOP cryptographic proofs** (authenticity)
-- **Smart contract logic** (programmable compliance)
-
-UPE creates an **Institutional Privacy Layer** where:
-- Payroll data is verifiable but not public
-- Compliance records are auditable but not exposed
-- Financial statements are provable but not readable
+npm install
+npm run dev
+# → http://localhost:5173
+```
 
 ---
 
-## Documentation
+## API Reference
 
-- **[ARCHITECTURE.md](ARCHITECTURE.md)**: Technical design and Sapphire integration
-- **[DELIVERABLES.md](DELIVERABLES.md)**: Grant milestones and progress tracking
-- **[TRUST_MODEL.md](TRUST_MODEL.md)**: Security assumptions and hardening roadmap
-- **[RESEARCH_SCOPE.md](RESEARCH_SCOPE.md)**: Oasis-focused research objectives
-- **[docs/oasis_grant_notes.md](docs/oasis_grant_notes.md)**: Demo steps and grant narrative
+### `GET /api/health`
+```json
+{ "status": "ok", "notary_address": "0xfcad..." }
+```
+
+### `POST /api/generate-proof`
+```json
+// Request
+{ "employee_address": "0x..." }
+
+// Response — STLOP Proof
+{
+  "salary": "75000",
+  "timestamp": 1771315112,
+  "signature": "0x...",
+  "notary_pubkey": "0xfcad..."
+}
+```
 
 ---
 
-## Links & Resources
+## Grant Context
 
-- **Oasis Network**: [https://oasisprotocol.org](https://oasisprotocol.org)
-- **Sapphire Documentation**: [https://docs.oasis.io/dapp/sapphire/](https://docs.oasis.io/dapp/sapphire/)
-- **ROFL Documentation**: [https://docs.oasis.io/dapp/rofl/](https://docs.oasis.io/dapp/rofl/)
-- **ROSE Bloom Grants**: [https://oasisprotocol.org/grants](https://oasisprotocol.org/grants)
+This project is built for the **Oasis ROSE Bloom Grant**, demonstrating:
+
+1. **Confidential EVM** — Sapphire's TEE encrypts contract state by default
+2. **Privacy-preserving oracles** — Web2 data verified without exposure
+3. **STLOP (Signed TLS-Originated Proofs)** — cryptographic bridge between Web2 and Web3
+
+**Roadmap:**
+- Phase 2: Replace mock data with real [TLSNotary](https://tlsnotary.org/) proofs
+- Phase 3: ROFL (decentralized notary network on Oasis)
+- Phase 4: Multi-provider support (credit score, assets, identity)
 
 ---
 
-## Disclaimer
+## � Architecture Rationale: The Strategic Delay of zkTLS
 
-**Research Prototype**: This software is for experimental and development use only. It demonstrates the feasibility of privacy-preserving institutional data settlement on Oasis Sapphire but is **not production-ready**.
+For Phase 1 (MVP), I strictly focused on perfecting the **On-Chain Confidentiality Pipeline**: Rust Notary → secp256k1 ECDSA → Oasis Sapphire TEE. The off-chain payroll data is currently simulated.
 
-**Alpha Limitations**:
-- Single trusted notary (centralization risk)
-- No formal security audit
-- Limited testing on Sapphire Testnet
-- ROFL integration not yet implemented
+**Why deliberately simulate the oracle data?**
 
-**Do not use with real sensitive data or production value.**
+Fetching real Web2 banking/payroll data requires a trustless **zkTLS integration**. If I built a standard centralized backend scraper today, users would have to share their banking credentials with my Rust server — which **completely defeats the purpose of a Privacy Engine.**
+
+A truly privacy-preserving oracle requires a client-side zkTLS prover, where:
+1. The user's browser initiates and completes the TLS session with their bank
+2. A cryptographic proof of that TLS transcript is generated *locally*
+3. The Rust Notary **mathematically verifies** the proof without ever touching the user's password or raw data
+
+This is a significant cryptography and engineering undertaking (see [TLSNotary](https://tlsnotary.org/)). **I refuse to compromise user security for a quick demo.**
+
+Building this trustless zkTLS infrastructure is the exact focus of **Phase 2**, and the primary justification for this grant request. The Phase 1 architecture is not a shortcut — it is the correct foundation that Phase 2 will build upon directly.
+
+---
+
+## �🧪 Testing & Reproducibility
+
+Security and reliability are top priorities. Run the full test suite locally in under 2 minutes:
+
+```bash
+# 1. Rust Notary — ECDSA signing & API logic
+cd core
+cargo test
+
+# 2. Smart Contract — Sapphire integration & signature verification
+cd contracts/oasis
+forge test -vvv
+```
+
+---
+
+## 💰 Grant Request & Milestones
+
+**Requested Amount:** $20,000 (paid in ROSE)
+
+| Milestone | Timeline | Amount | Deliverable |
+|---|---|---|---|
+| **1 — Core Notary Hardening & Testnet Polish** | Month 1 | $5,000 | Finalize Rust Notary REST API + ECDSA signing, optimize `PrivatePayroll.sol`, open-source repo with full test coverage and stable Vercel/Cloudflare frontend |
+| **2 — TLSNotary Integration & Security** | Month 2 | $7,500 | Replace REST data fetching with cryptographically secure TLSNotary proofs; trustless proof-of-concept where the Notary cannot spoof Web2 data |
+| **3 — Mainnet Launch & Developer SDK** | Month 3 | $7,500 | Deploy to Oasis Sapphire Mainnet, release integration SDK/docs, at least one mock DeFi integration (e.g. undercollateralized lending based on UPE data) |
+
+---
+
+## 🤝 Value to the Oasis Ecosystem
+
+UPE acts as critical infrastructure for Oasis Sapphire, enabling a new wave of privacy-first DeFi applications — undercollateralized lending based on private credit scores, payroll-backed loans, and verified asset ownership — all without ever exposing the underlying data on-chain.
+
+This directly **drives developer adoption** and brings Web2 liquidity into the Oasis network, demonstrating the unique power of Sapphire's Confidential EVM and TEEs in a way standard EVMs simply cannot replicate.
+
+---
+
+## 👨‍💻 About the Builder
+
+**Shivaay Labs** — UPE is developed by a solo founder with 3+ years of Web3 engineering experience, specializing in Rust, Solidity, and ZK/TEE architectures.
+
+- **Focus:** Bridging Web2 data privacy with Web3 verifiable compute
+- **Commitment:** High-intensity execution, transitioning to full-time solo founder upon grant approval
+- **GitHub:** [github.com/DSHIVAAY-23](https://github.com/DSHIVAAY-23)
 
 ---
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) for details.
-
----
-
-## Contact
-
-For grant-related inquiries or technical questions:
-- **GitHub Issues**: [Universal Privacy Engine](https://github.com/your-org/universal-privacy-engine/issues)
-- **Oasis Discord**: [#sapphire-developers](https://oasis.io/discord)
-
----
-
-**Built for Oasis Sapphire** 🌸 | **Powered by Confidential EVM** 🔐
+MIT OR Apache-2.0

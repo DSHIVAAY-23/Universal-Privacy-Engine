@@ -27,6 +27,9 @@ pub mod logging;
 // Data ingestion from external sources
 pub mod data_source;
 
+// Notary service for ECDSA signing (EVM compatibility)
+pub mod notary;
+
 /// Represents the target blockchain platform for verifier deployment.
 ///
 /// This enum allows the `PrivacyEngine` to generate chain-specific verifier bytecode,

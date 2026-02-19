@@ -1,8 +1,0 @@
-[0:00-0:10] Intro
-"Demonstrating UPE: Bridging Web2 Data to Oasis Sapphire Private State."
-
-[0:10-0:20] Action
-"Step 1: Notary signs off-chain data (STLOP Proof)."
-
-[0:20-0:30] Result
-"Step 2: Sapphire verifies signature & stores data in ENCRYPTED state."

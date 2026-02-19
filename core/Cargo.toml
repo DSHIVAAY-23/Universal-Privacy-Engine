@@ -36,13 +36,30 @@ reqwest.workspace = true
 # Async trait support
 async-trait.workspace = true
 
-# Async runtime
-tokio.workspace = true
+# Async runtime (with full features for Axum)
+tokio = { workspace = true, features = ["full"] }
 
 # Sensitive data handling
 secrecy.workspace = true
 hex = "0.4.3"
-ed25519-dalek.workspace = true
+
+# Web Server Dependencies
+axum = "0.7"
+tower-http = { version = "0.5", features = ["cors"] }
+tower = "0.4"
+
+# Ethereum Cryptography (ECDSA secp256k1 for EVM compatibility)
+ethers-core = "2.0"
+ethers-signers = "2.0"
+k256 = { version = "0.13", features = ["ecdsa"] }
+sha3 = "0.10"
+
+# Environment variables
+dotenv = "0.15"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [features]
 default = ["std"]

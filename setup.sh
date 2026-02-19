@@ -1,48 +1,35 @@
 #!/bin/bash
-# Universal Privacy Engine - Initialization and Build Commands
-# This script documents the commands to set up and verify the workspace
-
+# Universal Privacy Engine — Local Development Setup
 set -e
 
-echo "🚀 Universal Privacy Engine - Setup Script"
-echo "=========================================="
+echo "🔐 Universal Privacy Engine — Setup"
+echo "===================================="
 echo ""
 
-# The workspace structure is already created with the following files:
-# - Cargo.toml (root workspace)
-# - core/Cargo.toml, core/src/lib.rs
-# - adapters/sp1/Cargo.toml, adapters/sp1/src/lib.rs
-# - cli/Cargo.toml, cli/src/main.rs
-
-echo "✓ Workspace structure already created"
+# 1. Rust Notary Service
+echo "📦 Building Rust Notary Service..."
+cd core
+cp .env.example .env 2>/dev/null || true
+echo "  → Edit core/.env and set NOTARY_PRIVATE_KEY"
 echo ""
 
-# Verify the workspace builds
-echo "📦 Building workspace..."
-cargo build --workspace
-
-echo ""
-echo "✓ Build successful!"
+# 2. Start the notary
+echo "🚀 To start the Notary API:"
+echo "   cd core && PORT=3002 cargo run --release"
 echo ""
 
-# Run tests
-echo "🧪 Running tests..."
-cargo test --workspace
-
-echo ""
-echo "✓ Tests passed!"
+# 3. Expose via Cloudflare Tunnel (no account needed)
+echo "🌐 To expose via Cloudflare Tunnel:"
+echo "   cloudflared tunnel --url http://localhost:3002"
+echo "   → Copy the https://XXXX.trycloudflare.com URL"
 echo ""
 
-# Check the CLI
-echo "🔍 Verifying CLI..."
-cargo run -p universal-privacy-engine-cli -- --help
+# 4. Frontend
+echo "💻 To start the Frontend:"
+echo "   cd frontend"
+echo "   cp .env.example .env"
+echo "   # Set VITE_NOTARY_API_URL to your tunnel URL"
+echo "   npm install && npm run dev"
+echo ""
 
-echo ""
-echo "✅ Universal Privacy Engine is ready!"
-echo ""
-echo "Next steps:"
-echo "  1. Create a guest program (SP1 RISC-V program)"
-echo "  2. Compile it to ELF: cargo prove build"
-echo "  3. Generate a proof: cargo run -p universal-privacy-engine-cli -- prove --input <hex> --elf guest.elf"
-echo "  4. Verify the proof: cargo run -p universal-privacy-engine-cli -- verify --receipt proof.bin --elf guest.elf"
-echo ""
+echo "✅ See README.md for full instructions."

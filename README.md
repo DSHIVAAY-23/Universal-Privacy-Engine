@@ -1,5 +1,7 @@
 # Universal Privacy Engine (UPE)
 
+[![CI](https://github.com/DSHIVAAY-23/Universal-Privacy-Engine/actions/workflows/ci.yml/badge.svg)](https://github.com/DSHIVAAY-23/Universal-Privacy-Engine/actions/workflows/ci.yml)
+
 UPE is a privacy oracle. Users prove facts about their off-chain data — salary, credit score, asset value — to smart contracts on **Oasis Sapphire**, without the raw data ever touching the chain.
 
 ---
@@ -8,7 +10,21 @@ UPE is a privacy oracle. Users prove facts about their off-chain data — salary
 
 **[universal-privacy-engine.vercel.app](https://universal-privacy-engine-a1kfpf0no-dshivaay23s-projects.vercel.app)**
 
-Connect MetaMask on Sapphire Testnet → click **Start Verification** → your salary gets proven and stored encrypted on-chain.
+### First 60 seconds — what a reviewer should do
+
+1. Open the link above
+2. Connect MetaMask → switch to **Oasis Sapphire Testnet** (Chain ID: `23295`, RPC: `https://testnet.sapphire.oasis.io`)
+3. Click **Start Verification** — the frontend calls the Rust Notary and receives a signed STLOP proof
+4. Review the proof in the UI (salary, timestamp, ECDSA signature)
+5. Click **Submit** → approve the MetaMask transaction
+6. Wait for **Transaction Confirmed** — the `SalaryVerified` event is emitted on-chain
+7. Click **View My Salary** — `getMySalary()` returns your salary. Any other address gets a revert.
+
+**Sample verified transaction:** [`0x9def61f121055ff791ba8780ce1ba6596c5a7a6cce995bb035adaaecc9eb2211`](https://testnet.explorer.sapphire.oasis.io/tx/0x9def61f121055ff791ba8780ce1ba6596c5a7a6cce995bb035adaaecc9eb2211)
+
+### Trust model
+
+This contract relies on **Oasis Sapphire ParaTime** to keep state private. Deploy only to Sapphire — on any standard EVM chain (Ethereum, Polygon, Arbitrum, etc.) the `salaries` mapping is readable by anyone via `eth_getStorageAt`. The on-chain ECDSA verification is sound on any EVM; the storage confidentiality guarantee is not.
 
 ---
 

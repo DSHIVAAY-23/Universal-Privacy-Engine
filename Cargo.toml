@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "core",
+    "core", "packages/upe-core-circuits",
 ]
 
 resolver = "2"

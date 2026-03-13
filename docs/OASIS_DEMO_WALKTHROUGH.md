@@ -1,136 +1,89 @@
-# Oasis Sapphire End-to-End Demo Flow
+# Demo Walkthrough — UPE on Oasis Sapphire
 
-> **⚠️ DEPLOYMENT STATUS: Local Network Testing**  
-> This demo currently runs on **local Hardhat network** for development and testing.  
-> **Sapphire Testnet deployment** is planned for the next phase of the grant.  
-> All contract logic and cryptographic verification work correctly on local network.
+## Live deployment
 
-## Architecture
-
-The **Universal Privacy Engine (UPE)** enables private data settlement on Oasis Sapphire through the following flow:
-
-1.  **Notary (Off-Chain)**: Captures web2 data (e.g., payroll API), hashes it, and signs `(User, Data, Timestamp)` using an EIP-191 compatible wallet. This creates a **STLOP Proof**.
-2.  **Sapphire Contract (On-Chain)**: The `PrivatePayroll` contract receives the proof. It:
-    *   Verifies the Notary's signature.
-    *   Validates the timestamp.
-    *   Stores the data in **Sapphire Encrypted State**.
-3.  **User View (Decrypted)**: The user interacts with the contract to retrieve their own data. Because Sapphire runs in a TEE, only the designated user can decrypt their own state.
-
-```mermaid
-graph LR
-    N[Notary (Off-Chain)] -- Signed Proof --> C[PrivatePayroll.sol (Sapphire)]
-    C -- Encrypted State --> S[(Sapphire Storage)]
-    S -- Decrypted View --> U[User (Employee)]
-```
-
-## How to Run
-
-1.  **Install Dependencies**:
-    ```bash
-    cd contracts/oasis
-    npm install
-    ```
-
-2.  **Run the Demo Script**:
-    ```bash
-    npx hardhat run scripts/demo_sapphire_flow.js
-    ```
-    *(Note: For Sapphire Testnet, you would add `--network sapphire_testnet`)*
-
-## Key Concept: Input Visibility vs. Storage Privacy
-
-It is important to understand the difference between **transaction inputs** and **storage state**:
-
-*   **Transaction Inputs**: When sending the proof, the `salary` value is visible in the transaction data (mempool/block).
-    *   *Mitigation*: In a full production deployment, users would use the **Sapphire Wrapper** (Oasis SDK) to encrypt the transaction inputs *before* they reach the network, ensuring end-to-end privacy.
-*   **Storage State**: Once stored in the `mapping(address => uint256) private salaries`, the data is **fully encrypted** by the Sapphire ParaTime key. It cannot be read by node operators or via `getStorageAt`.
-
-This demo focuses on demonstrating the **Encrypted Storage** and **Access Control** capabilities.
+| | |
+|---|---|
+| Frontend | [universal-privacy-engine.vercel.app](https://universal-privacy-engine-a1kfpf0no-dshivaay23s-projects.vercel.app) |
+| Contract | `0x55bB3b7871fBf8a5BeB289079aAC9Dc13AA97024` (Sapphire Testnet) |
+| Notary | `0xFCAd0B19bB29D4674531d6f115237E16AfCE377c` |
+| Explorer | [testnet.explorer.sapphire.oasis.io](https://testnet.explorer.sapphire.oasis.io) |
 
 ---
 
-## Merged Demo Notes (from DEMO.md)
+## Browser demo (2 minutes)
 
-### What This Demo Proves
+You need MetaMask configured for Sapphire Testnet (Chain ID: 23295).
 
-#### ✅ Technical Capabilities Demonstrated
+1. Open the frontend
+2. Connect MetaMask, switch to Sapphire Testnet
+3. Click **Start Verification** — frontend calls the Rust Notary, gets a signed STLOP proof back
+4. Review the proof (salary, timestamp, ECDSA signature)
+5. Click **Submit** — MetaMask prompts you to sign the transaction
+6. Wait for confirmation — salary is now in TEE-encrypted state
+7. Click **View My Salary** — `getMySalary()` returns your value; any other wallet gets a revert
 
-1. **STLOP Proof Verification**
-   - EIP-191 signature verification works on-chain
-   - Notary trust anchor enforcement is functional
-   - Timestamp validation prevents replay attacks
+Confirmed transaction: `0x9def61f121055ff791ba8780ce1ba6596c5a7a6cce995bb035adaaecc9eb2211`
 
-2. **Sapphire Encrypted State**
-   - Private mappings are cryptographically encrypted at ParaTime level
-   - Access control ensures only employees can view their own data
-   - State queries work correctly with encrypted storage
+---
 
-3. **Cross-Environment Compatibility**
-   - Standard Solidity contracts work on Sapphire
-   - Hardhat tooling is fully compatible
-   - No custom compilers or frameworks required
+## Local reproduction
 
-### ❌ What This Demo Does NOT Prove
+```bash
+# Start the Notary
+cd core && cp .env.example .env
+# Set NOTARY_PRIVATE_KEY
+PORT=3002 cargo run --release
 
-1. **Data Authenticity**
-   - No proof that data came from a legitimate payroll source
-   - Signatures are from a test notary (not institutional)
-   - No zkTLS or authenticated data ingestion
+# Verify it's up
+curl -s http://localhost:3002/api/health | jq
+# → { "status": "ok", "notary_address": "0xfcad..." }
 
-2. **Institutional Trustworthiness**
-   - No KYC or identity verification
-   - No legal entity validation
-   - No institutional partnerships
+# Generate a proof
+curl -s -X POST http://localhost:3002/api/generate-proof \
+  -H "Content-Type: application/json" \
+  -d '{"employee_address": "0x06deedD21AfE4ae6BFb443A4f560aD13d81e05a7"}' | jq
+# → { "salary": "75000", "timestamp": ..., "signature": "0x..." }
 
-3. **Production Readiness**
-   - No security audit
-   - No formal verification
-   - No production hardening
-   - Single trusted notary (centralization risk)
+# Start the frontend
+cd frontend && cp .env.example .env
+# Set VITE_NOTARY_API_URL=http://localhost:3002
+npm install && npm run dev
 
-4. **Regulatory Compliance**
-   - No legal framework
-   - No regulatory approval
-   - No compliance with financial regulations
+# Run tests
+cd core && cargo test
+cd contracts/oasis && forge test -vvv
+```
 
-### Research Context
+---
 
-This demo is part of early-stage research into:
+## What this actually proves
 
-1. **Privacy-Preserving Data Settlement**: Can we settle sensitive off-chain data on-chain without exposure?
-2. **Sapphire Integration**: How do we leverage Confidential EVM for institutional use cases?
-3. **STLOP Methodology**: Are lightweight signed proofs sufficient for Phase 1?
+| Claim | Verification |
+|---|---|
+| ECDSA sig verified on-chain | `ecrecover` in `PrivatePayroll.sol` recovers `TRUSTED_NOTARY` |
+| Storage is encrypted | `eth_getStorageAt` returns ciphertext, not the salary value |
+| Access control works | `getMySalary()` reverts for any address other than the employee |
+| Replay attacks blocked | Contract checks timestamp uniqueness |
+| End-to-end on Sapphire Testnet | Confirmed tx on block explorer |
 
-**This is NOT**:
-- A production system
-- An institutional product
-- A regulatory solution
-- A finished protocol
+---
 
-### Next Steps (Research Directions)
+## The key point about Sapphire
 
-#### Short-term (Grant Scope)
-- Deploy to Sapphire Testnet
-- Create demo video showing full flow
-- Document deployment steps
-- Benchmark gas costs
+```bash
+# Ethereum — "private" is a lie:
+cast storage <contract> <slot> --rpc-url https://eth-mainnet.g.alchemy.com/v2/...
+# 0x000000000000000000000000000000000000000000000000000000000000124f8
+# (that's 75000 — your salary, readable by anyone)
 
-#### Medium-term (Post-Grant)
-- Multi-notary support (M-of-N signatures)
-- Additional use cases (compliance, financial statements)
-- Developer SDK for STLOP proof generation
-- Preliminary security review
+# Sapphire — actually encrypted:
+cast storage <contract> <slot> --rpc-url https://testnet.sapphire.oasis.io
+# 0xE7A3B9C2...  (ciphertext — unreadable without TEE access)
+```
 
-#### Long-term (ROFL Integration)
-- Decentralized notary with MPC signing
-- zkTLS proofs for data authenticity
-- Production hardening and formal audit
-- Institutional partnerships
+Sapphire is the only EVM where `private` mappings are actually private.
 
-### Disclaimer
+---
 
-This is experimental research software. It has NOT been audited, is NOT production-ready, and should NOT be used for any real-world financial or compliance purposes.
-
-**No institutional partnerships, users, or real-world deployments exist.**
-
-Use at your own risk.
+*February 2026 | Sapphire Testnet*

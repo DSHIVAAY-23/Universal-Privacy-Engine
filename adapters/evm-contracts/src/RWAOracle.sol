@@ -63,6 +63,7 @@ contract RWAOracle {
      */
     function submitRWAProof(
         uint256[8] calldata proof,
+        uint256 stateRoot,
         uint256 nullifierHash,
         uint256 minCollateral,
         address assetContract
@@ -75,9 +76,8 @@ contract RWAOracle {
         uint256[2][2] memory b = [[proof[2], proof[3]], [proof[4], proof[5]]];
         uint256[2] memory c = [proof[6], proof[7]];
         
-        // Hardcoding stateRoot to 0 for demo purposes. 
-        // In a real production environment, stateRoot would be provided and verified on-chain against an Oracle/Bridge.
-        uint256[3] memory publicSignals = [uint256(0), minCollateral, nullifierHash];
+        // Use the provided stateRoot, minCollateral, and nullifierHash for verification.
+        uint256[3] memory publicSignals = [stateRoot, minCollateral, nullifierHash];
 
         require(verifier.verifyProof(a, b, c, publicSignals), "ZK Proof Invalid");
 

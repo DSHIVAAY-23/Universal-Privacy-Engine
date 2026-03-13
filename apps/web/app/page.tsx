@@ -9,11 +9,11 @@ import { useWallet } from "@/hooks/useWallet";
 
 // ── Contract config ──────────────────────────────────────────────────────────
 const CONTRACT_ADDRESS =
-    process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ?? "0x600f0116753576D101f047AbA13dDCa6727f6E40";
+    process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ?? "0x2Df7658D5E57ed05D6F634fD7d73b334ADEc179A";
 
 
 const CONTRACT_ABI = [
-    "function submitRWAProof(uint256[8] calldata proof, uint256 nullifierHash, uint256 minCollateral, address assetContract) external",
+    "function submitRWAProof(uint256[8] calldata proof, uint256 stateRoot, uint256 nullifierHash, uint256 minCollateral, address assetContract) external",
     "event RWAProofSubmitted(address indexed account, address indexed assetContract, uint256 minCollateral)",
 ];
 
@@ -121,7 +121,7 @@ export default function HomePage() {
 
                 appendLine({ text: `[WALLET]   MetaMask confirmation requested...`, isSystem: true });
 
-                const tx = await contract.submitRWAProof(proofData.flatProof, proofData.nullifierHash, minCollateral, targetContract, { gasLimit: 3000000 });
+                const tx = await contract.submitRWAProof(proofData.flatProof, proofData.stateRoot, proofData.nullifierHash, minCollateral, targetContract, { gasLimit: 3000000 });
 
                 appendLine({ text: `[TX]       Transaction submitted: ${tx.hash}`, isSystem: true });
                 appendLine({ text: `[NETWORK]  Awaiting on-chain confirmation...`, isSystem: true });

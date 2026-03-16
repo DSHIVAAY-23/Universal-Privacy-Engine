@@ -43,8 +43,8 @@ This repository is organized into specific implementation phases:
 ---
 
 ## 🤝 Connect
-Built with ❤️ by **Shivaay Labs**. We are building the foundational privacy layer for the future of finance.
+Built with ❤️ by **VeriVault-Labs**. We are building the foundational privacy layer for the future of finance.
 
-- **Website**: [shivaaylabs.com](https://shivaaylabs.com)
-- **Twitter**: [@ShivaayLabs](https://twitter.com/Shivaay_23)
-- **Grant Inquiries**: shivaay@shivaaylabs.com
+- **Website**: [verivault-labs.com](https://verivault-labs.com)
+- **Twitter**: [@VeriVaultLabs](https://twitter.com/VeriVaultLabs)
+- **Grant Inquiries**: hello@verivault-labs.com

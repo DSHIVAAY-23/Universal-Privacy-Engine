@@ -1,6 +1,7 @@
 "use client";
 
 import { Wallet, Shield } from "lucide-react";
+import { Network } from "@/lib/contracts";
 
 interface ProofCardProps {
     assetContract: string;
@@ -9,7 +10,7 @@ interface ProofCardProps {
     onCollateralValueChange: (val: string) => void;
     onGenerate: () => void;
     isRunning: boolean;
-    selectedNetwork: string;
+    selectedNetwork: Network;
     walletConnected?: boolean;
 }
 
@@ -158,7 +159,7 @@ export default function ProofCard({
                 <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/20 px-3 py-2">
                     <Wallet className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-500" />
                     <span className="text-xs text-amber-700 dark:text-amber-400">
-                        Connect your wallet to submit the nullifier on-chain to Oasis Sapphire. Without a wallet, a simulation runs.
+                        Connect your wallet to submit the nullifier on-chain to {selectedNetwork}. Without a wallet, a simulation runs.
                     </span>
                 </div>
             )}

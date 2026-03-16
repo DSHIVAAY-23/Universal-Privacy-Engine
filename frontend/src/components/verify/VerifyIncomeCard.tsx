@@ -5,6 +5,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Spinner } from '../ui/Spinner';
 import { ProofPreview } from './ProofPreview';
+import { NetworkSelector } from './NetworkSelector';
 import { TransactionStatus } from './TransactionStatus';
 import { useNotaryAPI } from '../../hooks/useNotaryAPI';
 import { useVerifySalary } from '../../hooks/usePrivatePayroll';
@@ -106,10 +107,12 @@ export function VerifyIncomeCard() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
-                                <h2 className="text-3xl font-bold text-white mb-4">Generate STLOP Proof</h2>
+                                <h2 className="text-3xl font-bold text-white mb-4">Generate ZK Proof</h2>
                                 <p className="text-gray-400 mb-8 max-w-md mx-auto">
-                                    Initialize secure TLS proof generation from your payroll data source
+                                    Select your target network and initialize secure proof generation
                                 </p>
+
+                                <NetworkSelector />
 
                                 {proofError && (
                                     <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg max-w-md mx-auto">

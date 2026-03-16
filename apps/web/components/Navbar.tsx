@@ -4,18 +4,19 @@ import { type Dispatch, type SetStateAction } from "react";
 import ThemeToggle from "./ThemeToggle";
 import { Wallet, ChevronDown, AlertTriangle } from "lucide-react";
 import type { WalletState } from "@/hooks/useWallet";
+import { Network } from "@/lib/contracts";
 
 const NETWORKS = [
-    { id: "oasis", label: "Oasis Sapphire" },
-    { id: "secret", label: "Secret Network (CosmWasm)" },
-    { id: "zksync", label: "zkSync Era" },
-    { id: "aleo", label: "Aleo" },
-    { id: "mina", label: "Mina Protocol" },
+    { id: "oasis", label: Network.OasisSapphire },
+    { id: "secret", label: Network.SecretNetwork },
+    { id: "zksync", label: Network.zkSyncEra },
+    { id: "aleo", label: Network.Aleo },
+    { id: "mina", label: Network.Mina },
 ];
 
 interface NavbarProps {
-    selectedNetwork: string;
-    onNetworkChange: Dispatch<SetStateAction<string>>;
+    selectedNetwork: Network;
+    onNetworkChange: Dispatch<SetStateAction<Network>>;
     wallet: WalletState;
 }
 
@@ -61,7 +62,7 @@ export default function Navbar({ selectedNetwork, onNetworkChange, wallet }: Nav
                     <div className="relative">
                         <select
                             value={selectedNetwork}
-                            onChange={(e) => onNetworkChange(e.target.value)}
+                            onChange={(e) => onNetworkChange(e.target.value as Network)}
                             className="
                                 appearance-none cursor-pointer
                                 rounded-lg border border-gray-200 dark:border-gray-700

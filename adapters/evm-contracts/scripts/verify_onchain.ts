@@ -6,7 +6,7 @@ import path from "path";
 const execAsync = promisify(exec);
 
 async function main() {
-    const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x2Df7658D5E57ed05D6F634fD7d73b334ADEc179A";
+    const CONTRACT_ADDRESS = "0x868ddB7F682818cc392B4484Dd7A8b7629D6f4dA";
     const [signer] = await ethers.getSigners();
 
     console.log("=================================================");
@@ -19,7 +19,7 @@ async function main() {
 
     console.log("\n[1/4] Generating Real ZK Proof via SnarkJS...");
 
-    const assetContract = "0x0000000000000000000000000000000000000000";
+    const assetContract = "0x8888888888888888888888888888888888888888";
     const minRequiredValue = "500000";
     const scriptPath = path.resolve(__dirname, "../../../packages/upe-core-circuits/scripts/generate_proof.js");
 

@@ -1,0 +1,6 @@
+{
+    "program": "upe_rwa_oracle.aleo",
+    "version": "0.1.0",
+    "description": "Universal Privacy Engine RWA Oracle for Aleo",
+    "license": "MIT"
+}

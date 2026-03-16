@@ -1,0 +1,16 @@
+{
+  "name": "upe-mina-adapter",
+  "version": "0.1.0",
+  "description": "UPE adapter for Mina Protocol o1js verification",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "node dist/RWAOracle.js"
+  },
+  "dependencies": {
+    "o1js": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

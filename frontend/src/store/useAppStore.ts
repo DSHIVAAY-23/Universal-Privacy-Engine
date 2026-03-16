@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { Network } from '../types';
 import type { AppState, STLOPProof } from '../types';
 
 /**
@@ -13,6 +14,10 @@ export const useAppStore = create<AppState>((set) => ({
     // Proof state
     currentProof: null,
     setProof: (proof: STLOPProof | null) => set({ currentProof: proof }),
+
+    // Network state
+    selectedNetwork: Network.OasisSapphire,
+    setSelectedNetwork: (network: Network) => set({ selectedNetwork: network }),
 
     // Salary state
     verifiedSalary: null,

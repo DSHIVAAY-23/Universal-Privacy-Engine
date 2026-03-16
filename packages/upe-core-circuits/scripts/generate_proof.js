@@ -23,8 +23,8 @@ async function main() {
     const F = poseidon.F;
 
     // 2. Leaf Generation
-    // Assume user has minRequiredValue + 500 dollars
-    const tokenBalance = (BigInt(minRequiredValue) + 500n).toString();
+    // Mock: Assume the user HAS exactly $1,000,000 in their real-world account.
+    const tokenBalance = "1000000";
     const leaf = poseidon([userAddressNum, tokenBalance]);
 
     // 3. Merkle Proof (Mock a 20-level tree with 0s)

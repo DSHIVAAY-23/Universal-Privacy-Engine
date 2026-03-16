@@ -18,6 +18,14 @@ export interface HealthResponse {
     timestamp: number;
 }
 
+export enum Network {
+    OasisSapphire = 'oasis-sapphire',
+    zkSyncEra = 'zksync-era',
+    SecretNetwork = 'secret-network',
+    Aleo = 'aleo',
+    Mina = 'mina',
+}
+
 export type VerifyStep = 'idle' | 'fetching-proof' | 'preview' | 'submitting' | 'success';
 
 export interface VerifyState {
@@ -31,6 +39,10 @@ export interface AppState {
     // Wallet
     isConnected: boolean;
     address: string | null;
+
+    // Network selection
+    selectedNetwork: Network;
+    setSelectedNetwork: (network: Network) => void;
 
     // Proof
     currentProof: STLOPProof | null;

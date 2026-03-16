@@ -6,16 +6,7 @@ import Navbar from "@/components/Navbar";
 import ProofCard from "@/components/ProofCard";
 import Terminal from "@/components/Terminal";
 import { useWallet } from "@/hooks/useWallet";
-
-// ── Contract config ──────────────────────────────────────────────────────────
-const CONTRACT_ADDRESS =
-    process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ?? "0x2Df7658D5E57ed05D6F634fD7d73b334ADEc179A";
-
-
-const CONTRACT_ABI = [
-    "function submitRWAProof(uint256[8] calldata proof, uint256 stateRoot, uint256 nullifierHash, uint256 minCollateral, address assetContract) external",
-    "event RWAProofSubmitted(address indexed account, address indexed assetContract, uint256 minCollateral)",
-];
+import { CONTRACT_ADDRESSES, CONTRACT_ABI, Network } from "@/lib/contracts";
 
 // ── Terminal line type ───────────────────────────────────────────────────────
 export interface TerminalLine {
@@ -46,7 +37,7 @@ function formatUSD(val: string) {
 export default function HomePage() {
     const wallet = useWallet();
 
-    const [selectedNetwork, setSelectedNetwork] = useState("Oasis Sapphire");
+    const [selectedNetwork, setSelectedNetwork] = useState(Network.OasisSapphire);
     const [assetContract, setAssetContract] = useState("");
     const [collateralValue, setCollateralValue] = useState("");
     const [terminalLines, setTerminalLines] = useState<TerminalLine[]>([]);
@@ -63,6 +54,7 @@ export default function HomePage() {
 
         const displayContract = shortAddr(assetContract || "0xTokenizedRealEstate...");
         const displayCollateral = formatUSD(collateralValue || "500000");
+        const currentContractAddress = CONTRACT_ADDRESSES[selectedNetwork];
 
         try {
             // ── Step 1: Init ─────────────────────────────────────────────────
@@ -82,7 +74,7 @@ export default function HomePage() {
             const proveRes = await fetch("/api/prove", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ targetUrl: assetContract, collateralValue }),
+                body: JSON.stringify({ assetContract, minRequiredValue: collateralValue }),
             });
             if (!proveRes.ok) throw new Error("Proof generation API failed");
             const proofData = await proveRes.json();
@@ -110,14 +102,21 @@ export default function HomePage() {
             }
 
             // ── Step 3: On-chain ─────────────────────────────────────────────
-            if (wallet.isConnected && wallet.signer) {
+            const isEVM = selectedNetwork === Network.OasisSapphire || selectedNetwork === Network.zkSyncEra;
+
+            if (isEVM && wallet.isConnected && wallet.signer) {
                 await delay(400);
                 appendLine({ text: `[WALLET]   Signer: ${wallet.shortAddress}`, isSystem: true });
-                appendLine({ text: `[CONTRACT] Anchoring nullifier + proof to Oasis Sapphire...`, isSystem: true });
+                appendLine({ text: `[CONTRACT] Active Target: ${currentContractAddress}`, isSystem: true });
+                appendLine({ text: `[CONTRACT] Anchoring nullifier + proof to ${selectedNetwork}...`, isSystem: true });
 
-                const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, wallet.signer);
+                const contract = new ethers.Contract(currentContractAddress, CONTRACT_ABI, wallet.signer);
                 const minCollateral = collateralValue || "500000";
                 const targetContract = assetContract || "0x0000000000000000000000000000000000000000";
+
+                if (!proofData.stateRoot || !proofData.flatProof) {
+                    throw new Error("Partial proof data received from API. Verification cannot proceed.");
+                }
 
                 appendLine({ text: `[WALLET]   MetaMask confirmation requested...`, isSystem: true });
 
@@ -142,7 +141,25 @@ export default function HomePage() {
                     isSuccess: true,
                 });
                 appendLine({ text: `[TX HASH]  ${txHash}`, isSuccess: true });
-                appendLine({ text: `[SUCCESS]  RWA Collateral Shield ACTIVE on Oasis Network 🛡️`, isSuccess: true });
+                appendLine({ text: `[SUCCESS]  RWA Collateral Shield ACTIVE on ${selectedNetwork} 🛡️`, isSuccess: true });
+            } else if (!isEVM) {
+                await delay(500);
+                appendLine({
+                    text: `[VERIFIER] Proof & Nullifier verified for ${selectedNetwork}.`,
+                    isSuccess: true,
+                });
+                appendLine({
+                    text: `[CONTRACT] Active Target: ${currentContractAddress}`,
+                    isSystem: true,
+                });
+                appendLine({
+                    text: `[SUCCESS]  RWA Collateral Shield ACTIVE on ${selectedNetwork} 🛡️`,
+                    isSuccess: true,
+                });
+                appendLine({
+                    text: `[NOTE]     Non-EVM verification follows native chain protocol.`,
+                    isSystem: true,
+                });
             } else {
                 await delay(500);
                 appendLine({

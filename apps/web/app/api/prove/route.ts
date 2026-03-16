@@ -30,6 +30,7 @@ export async function POST(req: Request) {
             flatProof: proofData.flatProof,
             publicSignals: proofData.publicSignals,
             nullifierHash: proofData.nullifierHash,
+            stateRoot: proofData.stateRoot,
             assetContract: assetContract,
             minRequiredValue: minRequiredValue,
             proverTimeMs: (t1 - t0).toFixed(2),

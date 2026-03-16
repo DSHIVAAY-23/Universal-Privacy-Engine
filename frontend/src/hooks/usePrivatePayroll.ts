@@ -1,27 +1,38 @@
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
-import { PRIVATE_PAYROLL_ADDRESS, PRIVATE_PAYROLL_ABI } from '../lib/contracts';
-import type { STLOPProof } from '../types';
+import { CONTRACT_ADDRESSES, RWA_ORACLE_ABI, Network } from '../lib/contracts';
+import { useAppStore } from '../store/useAppStore';
 
 /**
- * Custom hook for PrivatePayroll contract write operations
- * Handles salary verification submission
+ * Custom hook for RWAOracle contract write operations
+ * Handles multi-chain ZK proof submission
  */
 export function useVerifySalary() {
     const { writeContract, data: hash, error, isPending } = useWriteContract();
     const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+    const { selectedNetwork } = useAppStore();
 
-    const verifySalary = async (proof: STLOPProof) => {
+    const verifySalary = async (proof: any) => {
         try {
-            await writeContract({
-                address: PRIVATE_PAYROLL_ADDRESS,
-                abi: PRIVATE_PAYROLL_ABI,
-                functionName: 'verifyAndStoreSalary',
-                args: [
-                    BigInt(proof.salary),
-                    BigInt(proof.timestamp),
-                    proof.signature as `0x${string}`,
-                ],
-            });
+            const address = CONTRACT_ADDRESSES[selectedNetwork];
+            
+            // For EVM chains (Oasis, zkSync)
+            if (selectedNetwork === Network.OasisSapphire || selectedNetwork === Network.zkSyncEra) {
+                await writeContract({
+                    address: address as `0x${string}`,
+                    abi: RWA_ORACLE_ABI,
+                    functionName: 'submitRWAProof',
+                    args: [
+                        proof.proof,
+                        proof.stateRoot,
+                        proof.nullifierHash,
+                        proof.minCollateral,
+                        proof.assetContract,
+                    ],
+                });
+            } else {
+                console.log(`Verification for ${selectedNetwork} handled via custom adapter logic`);
+                // TODO: Implement Secret/Aleo/Mina specific submission logic
+            }
         } catch (err) {
             console.error('Error verifying salary:', err);
             throw err;
@@ -31,7 +42,7 @@ export function useVerifySalary() {
     return {
         verifySalary,
         txHash: hash,
-        error,
+        error: error as Error | null,
         isPending,
         isConfirming,
         isSuccess,
@@ -39,16 +50,18 @@ export function useVerifySalary() {
 }
 
 /**
- * Custom hook for reading encrypted salary from contract
- * Only works for the connected wallet address
+ * Custom hook for reading collateral from RWAOracle
  */
 export function useGetSalary(address?: `0x${string}`) {
+    const { selectedNetwork } = useAppStore();
+    const contractAddress = CONTRACT_ADDRESSES[selectedNetwork];
+
     const { data: salary, error, isLoading, refetch } = useReadContract({
-        address: PRIVATE_PAYROLL_ADDRESS,
-        abi: PRIVATE_PAYROLL_ABI,
-        functionName: 'getMySalary',
+        address: contractAddress as `0x${string}`,
+        abi: RWA_ORACLE_ABI,
+        functionName: 'getActiveCollateral',
         query: {
-            enabled: !!address, // Only query if address is provided
+            enabled: !!address && (selectedNetwork === Network.OasisSapphire || selectedNetwork === Network.zkSyncEra),
         },
     });
 
@@ -57,22 +70,5 @@ export function useGetSalary(address?: `0x${string}`) {
         error,
         isLoading,
         refetch,
-    };
-}
-
-/**
- * Custom hook for reading the trusted notary address
- */
-export function useTrustedNotary() {
-    const { data: notaryAddress, error, isLoading } = useReadContract({
-        address: PRIVATE_PAYROLL_ADDRESS,
-        abi: PRIVATE_PAYROLL_ABI,
-        functionName: 'TRUSTED_NOTARY',
-    });
-
-    return {
-        notaryAddress: notaryAddress as `0x${string}` | undefined,
-        error,
-        isLoading,
     };
 }

@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "core", "packages/upe-core-circuits",
+    "adapters/secret-network-cosmwasm",
 ]
 
 resolver = "2"

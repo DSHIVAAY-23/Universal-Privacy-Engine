@@ -145,8 +145,12 @@ On any standard EVM, `private` mappings are readable via `eth_getStorageAt`. Sap
 
 ## About the Builder
 
+**VeriVault-Labs** is building the foundational privacy layer for the future of finance.
 
-GitHub: [github.com/DSHIVAAY-23](https://github.com/DSHIVAAY-23)
+- **GitHub**: [github.com/DSHIVAAY-23](https://github.com/DSHIVAAY-23)
+- **Website**: [verivault-labs.com](https://verivault-labs.com)
+- **Twitter**: [@VeriVaultLabs](https://twitter.com/VeriVaultLabs)
+- **Email**: hello@verivault-labs.com
 
 ---
 

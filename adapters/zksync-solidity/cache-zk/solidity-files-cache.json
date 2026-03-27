@@ -2,7 +2,7 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/data/Universal-Privacy-Engine/adapters/zksync-solidity/contracts/IVerifier.sol": {
-      "lastModificationDate": 1773148565540,
+      "lastModificationDate": 1774530830772,
       "contentHash": "56b95ffb0508c13b1aa769b5eb15effe",
       "sourceName": "contracts/IVerifier.sol",
       "solcConfig": {
@@ -58,7 +58,7 @@
       ]
     },
     "/data/Universal-Privacy-Engine/adapters/zksync-solidity/contracts/RWAOracle.sol": {
-      "lastModificationDate": 1773506267578,
+      "lastModificationDate": 1774530830772,
       "contentHash": "d2ebb6e4c44af0a2b65741fa5403d91c",
       "sourceName": "contracts/RWAOracle.sol",
       "solcConfig": {
@@ -116,7 +116,7 @@
       ]
     },
     "/data/Universal-Privacy-Engine/adapters/zksync-solidity/contracts/Verifier.sol": {
-      "lastModificationDate": 1773506267583,
+      "lastModificationDate": 1774530830773,
       "contentHash": "f399fba0e50f485161a052298ea9ef50",
       "sourceName": "contracts/Verifier.sol",
       "solcConfig": {
